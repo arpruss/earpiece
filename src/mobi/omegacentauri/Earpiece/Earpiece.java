@@ -112,7 +112,7 @@ public class Earpiece extends Activity implements ServiceConnection {
 
     		@Override
     		public void onCheckedChanged(CompoundButton button, boolean value) {
-    			options.edit().putBoolean(Options.PREF_EQUALIZER_ACTIVE, value);
+    			options.edit().putBoolean(Options.PREF_EQUALIZER_ACTIVE, value).commit();
     			updateEqualizer(value);
     		}});
     	
