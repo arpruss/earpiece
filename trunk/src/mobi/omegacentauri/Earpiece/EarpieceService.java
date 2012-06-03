@@ -136,6 +136,10 @@ public class EarpieceService extends Service {
 	
 	@Override
 	public void onDestroy() {
+		if (eq != null) {
+			eq.setEnabled(false);
+			eq = null;
+		}
 		Earpiece.log("Destroying service, destroying notification =" + (Options.getNotify(options) != Options.NOTIFY_ALWAYS));
 		stopForeground(Options.getNotify(options) != Options.NOTIFY_ALWAYS);
 	}
