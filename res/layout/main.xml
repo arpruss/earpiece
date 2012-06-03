@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	    android:orientation="vertical"
+	    android:paddingRight="5sp"
+	    android:paddingLeft="5sp"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content">	       
+
+    <CheckBox
+        android:id="@+id/earpiece"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:text="Audio through earpiece"/>
+
+    <CheckBox
+        android:id="@+id/equalizer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:text="Volume boost"/>
+    
+	<ScrollView 
+	    android:id="@+id/equalizer_scroll"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content">
+	
+	<LinearLayout
+	    android:id="@+id/equalizer_inside"
+	  	android:orientation="vertical"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content">	       
+	    
+    <LinearLayout 
+        android:layout_width="match_parent" 
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        >
+
+        <TextView
+		android:id="@+id/boost_value"
+        android:layout_width="50sp"
+        android:layout_marginLeft="5sp"
+        android:textSize="16sp"
+        android:layout_height="wrap_content"
+        android:text="Boost: 100%"/>
+<SeekBar
+    android:id="@+id/boost"
+    android:layout_width="0dip"
+    android:layout_weight="1"
+    android:layout_height="wrap_content"
+    android:layout_marginLeft="00dip"
+    android:layout_marginRight="10dip"
+    android:layout_marginTop="10dip"
+    android:layout_marginBottom="10dip"
+    android:max="10000"
+    />
+</LinearLayout>
+	  <TextView
+	      android:id="@+id/warn"
+	      android:layout_width="wrap_content"
+	      android:layout_height="wrap_content"
+	      android:text="Warning: More than 30% may damage speakers/hearing."/>  	    
+	    
+	</LinearLayout>
+	    
+	</ScrollView>    
+
+</LinearLayout>
