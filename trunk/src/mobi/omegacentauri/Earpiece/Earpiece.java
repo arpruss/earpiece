@@ -33,21 +33,16 @@ import android.widget.TextView;
 
 public class Earpiece extends Activity implements ServiceConnection {
 	private static boolean DEBUG = true;
-	AudioManager am;
 	CheckBox earpieceBox;
 	CheckBox equalizerBox;
-	Equalizer eq;
 	private SharedPreferences options;
-	private boolean equalizerActive;
 	private Messenger messenger;
 	private NotificationManager notificationManager;
-	private short bands;
-	private short rangeLow;
-	private short rangeHigh;
 	private int SLIDER_MAX = 10000;
 	private SeekBar boostBar;
 	private View equalizerScroll;
 	private LinearLayout equalizerInside;
+	private Settings settings;
 	
 	static final int NOTIFICATION_ID = 1;
 
@@ -65,7 +60,8 @@ public class Earpiece extends Activity implements ServiceConnection {
         setContentView(R.layout.main);
 
 		options = PreferenceManager.getDefaultSharedPreferences(this);
-		am = (AudioManager)getSystemService(AUDIO_SERVICE);
+		settings = new Settings(this);
+		
     	notificationManager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
     	boostBar = (SeekBar)findViewById(R.id.boost);
@@ -76,17 +72,15 @@ public class Earpiece extends Activity implements ServiceConnection {
 
     }
     
-    void updateEqualizer(boolean value) {
-		
+    void updateEqualizerService(boolean value) {		
 		if (value) {
 			restartService(true);
 			equalizerScroll.setVisibility(View.VISIBLE);
     	}
 		else {
 			stopService();
-			equalizerScroll.setVisibility(View.GONE);			
+			equalizerScroll.setVisibility(View.GONE);
 		}
-
     }
     
     private void updateBoostText(int progress) {
@@ -94,30 +88,32 @@ public class Earpiece extends Activity implements ServiceConnection {
 		((TextView)findViewById(R.id.boost_value)).setText(t);
     }
 
-    void setupEqualizer() throws UnsupportedOperationException {
-        if (Build.VERSION.SDK_INT<9)
-        	throw(new UnsupportedOperationException("SDK<9"));
+    void setupEqualizer() {
+    	log("setupEqualizer");
 
-        eq = new Equalizer(0, 0);
-		bands = eq.getNumberOfBands();
-		
-		rangeLow = eq.getBandLevelRange()[0];
-		rangeHigh = eq.getBandLevelRange()[1];
-		
+    	if (!settings.haveEqualizer()) {
+        	log("no equalizer");
+    		equalizerBox.setVisibility(View.GONE);
+    		updateEqualizerService(false);
+    		
+    		return;
+    	}
+    	
 		equalizerBox.setVisibility(View.VISIBLE);
 		
-		boolean active = options.getBoolean(Options.PREF_EQUALIZER_ACTIVE, false); 
 		
     	equalizerBox.setOnCheckedChangeListener(new OnCheckedChangeListener(){
 
     		@Override
     		public void onCheckedChanged(CompoundButton button, boolean value) {
-    			options.edit().putBoolean(Options.PREF_EQUALIZER_ACTIVE, value).commit();
-    			updateEqualizer(value);
+    			settings.equalizerActive = value;
+    			settings.save(options);
+    			updateEqualizerService(value);
+    			log("equalizer "+settings.isEqualizerActive());
     		}});
     	
-    	equalizerBox.setChecked(active);
-    	updateEqualizer(active);
+    	equalizerBox.setChecked(settings.equalizerActive);
+    	updateEqualizerService(settings.equalizerActive);
     	
 		boostBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
 
@@ -125,7 +121,8 @@ public class Earpiece extends Activity implements ServiceConnection {
 			public void onProgressChanged(SeekBar seekBar, int progress,
 					boolean fromUser) {
 				if (fromUser) {
-					options.edit().putInt(Options.PREF_BOOST, fromSlider(progress,0,rangeHigh)).commit();
+					settings.boostValue = fromSlider(progress,0,settings.rangeHigh);
+					settings.save(options);
 					sendMessage(IncomingHandler.MSG_RELOAD_SETTINGS, 0, 0);
 				}
 				updateBoostText(progress);
@@ -141,7 +138,7 @@ public class Earpiece extends Activity implements ServiceConnection {
 		});
 
 		int progress = toSlider(options.getInt(Options.PREF_BOOST, 0), 0,
-				rangeHigh);
+				settings.rangeHigh);
 		boostBar.setProgress(progress);
 		updateBoostText(progress);
     }
@@ -157,58 +154,36 @@ public class Earpiece extends Activity implements ServiceConnection {
     
     @Override
     public void onResume() {
-    	equalizerActive = options.getBoolean(Options.PREF_EQUALIZER_ACTIVE, false);
-    	
     	super.onResume();
-    	try {
-    		setupEqualizer();
-    	}
-    	catch(UnsupportedOperationException e) {
-    		Log.e("Earpiece", "Equalizer: "+e.toString());
-    		eq = null;
-    		equalizerBox.setVisibility(View.GONE);
-    		equalizerScroll.setVisibility(View.GONE);
-    	}
 
-    	earpieceBox.setChecked(getEarpieceValue());		
+    	settings.load(options);
+    	settings.setEarpiece();
+
+    	setupEqualizer();
+
+    	earpieceBox.setChecked(settings.earpieceActive);		
     	earpieceBox.setOnCheckedChangeListener(new OnCheckedChangeListener(){
 
     		@Override
     		public void onCheckedChanged(CompoundButton button, boolean value) {
-    			earpiece(value);
+    			settings.earpieceActive = value;
+    			settings.save(options);
+    			settings.setEarpiece();
     		}});    	
     }
     
     @Override
     public void onPause() {
     	super.onPause();
-
+    	
     	if (messenger != null) {
 			log("unbind");
 			unbindService(this);
+			messenger = null;
 		}
 
     }
     
-    boolean getEarpieceValue() {
-    	return am.getMode() == AudioManager.MODE_IN_CALL;
-    }
-    
-    void earpiece(boolean value) {
-		am.setSpeakerphoneOn(false);
-		if (value) {
-			am.setMode(AudioManager.MODE_IN_CALL);
-			am.setRouting(AudioManager.MODE_NORMAL, AudioManager.ROUTE_EARPIECE, 
-					AudioManager.ROUTE_ALL);
-		}
-		else {
-			am.setMode(AudioManager.MODE_NORMAL);
-			am.setRouting(AudioManager.MODE_NORMAL, AudioManager.ROUTE_SPEAKER, 
-					AudioManager.ROUTE_ALL);
-		}
-    }
-
-
 	public static void setNotification(Context c, NotificationManager nm, boolean active) {
 		Notification n = new Notification(
 				active?R.drawable.equalizer:R.drawable.equalizeroff,
@@ -224,7 +199,8 @@ public class Earpiece extends Activity implements ServiceConnection {
 	}
 	
 	private void updateNotification() {
-		updateNotification(this, options, notificationManager, equalizerActive);
+		updateNotification(this, options, notificationManager, 
+				settings.isEqualizerActive());
 	}
 	
 	public static void updateNotification(Context c, 
@@ -250,6 +226,11 @@ public class Earpiece extends Activity implements ServiceConnection {
 
 	void stopService() {
 		log("stop service");
+		if (messenger != null) {
+			unbindService(this);
+			messenger = null;
+		}
+		
 		stopService(new Intent(this, EarpieceService.class));
 	}
 	
@@ -273,19 +254,19 @@ public class Earpiece extends Activity implements ServiceConnection {
 		}
 	}
 	
-	void setActive(boolean value, boolean bind) {
-		SharedPreferences.Editor ed = options.edit();
-		ed.putBoolean(Options.PREF_EQUALIZER_ACTIVE, value);
-		ed.commit();
-		if (value) {
-			restartService(bind);
-		}
-		else {
-			stopService();
-		}
-		equalizerActive = value;
-		updateNotification();
-	}
+//	void setActive(boolean value, boolean bind) {
+//		SharedPreferences.Editor ed = options.edit();
+//		ed.putBoolean(Options.PREF_EQUALIZER_ACTIVE, value);
+//		ed.commit();
+//		if (value) {
+//			restartService(bind);
+//		}
+//		else {
+//			stopService();
+//		}
+//		equalizerActive = value;
+//		updateNotification();
+//	}
 	
 	public void sendMessage(int n, int arg1, int arg2) {
 		if (messenger == null) 

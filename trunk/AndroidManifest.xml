@@ -23,8 +23,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name="mobi.omegacentauri.Earpiece.EarpieceService"/>
-        </application>
+        <receiver android:name="mobi.omegacentauri.Earpiece.OnBootReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+
+                <category android:name="android.intent.category.HOME" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name="mobi.omegacentauri.Earpiece.EarpieceService" />
+</application>
      <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
     
 </manifest>
