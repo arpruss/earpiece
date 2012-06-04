@@ -44,11 +44,7 @@ public class EarpieceService extends Service {
 	
 	private final Messenger messenger = new Messenger(new IncomingHandler());
 	private SharedPreferences options;
-	private Equalizer eq;
-	private short bands;
-	private short rangeLow;
-	private short rangeHigh;
-	private AudioManager am;
+	private Settings settings;
 	
 	public class IncomingHandler extends Handler {
 		public static final int MSG_OFF = 0;
@@ -60,7 +56,8 @@ public class EarpieceService extends Service {
 			Earpiece.log("Message: "+m.what);
 			switch(m.what) {
 			case MSG_RELOAD_SETTINGS:
-				loadEqualizer();
+				settings.load(options);
+				settings.setEqualizer();
 				break;
 			default:
 				super.handleMessage(m);
@@ -73,52 +70,12 @@ public class EarpieceService extends Service {
 		return messenger.getBinder();
 	}
 	
-    void setupEqualizer() {
-    	try {
-	        if (Build.VERSION.SDK_INT<9)
-	        	throw(new UnsupportedOperationException("SDK<9"));
-	
-	        eq = new Equalizer(0, 0);
-			bands = eq.getNumberOfBands();
-			
-			rangeLow = eq.getBandLevelRange()[0];
-			rangeHigh = eq.getBandLevelRange()[1];
-    	}
-    	catch(UnsupportedOperationException e) {
-			Log.e("EarpieceService", "Equalizer: "+e.toString());
-			eq = null;
-    	}
-	}
-    
-    private void loadEqualizer() {
-    	if (eq == null)
-    		return;
-    	
-    	short boostValue = (short)options.getInt(Options.PREF_BOOST, 0);
-    	
-    	Earpiece.log("boost to "+boostValue);
-    	if (boostValue < 0)
-    		boostValue = 0;
-    	if (boostValue > rangeHigh)
-    		boostValue = rangeHigh;
-    	
-    	for (short i=0; i<bands; i++) {
-    		eq.setBandLevel(i, (short)boostValue);
-    	}
-    	
-    	eq.setEnabled(boostValue > 0);
-    }
-	
 	@Override
 	public void onCreate() {
 		Earpiece.log("Creating service");
 		options = PreferenceManager.getDefaultSharedPreferences(this);
+		settings = new Settings(this);
 		
-        am = (AudioManager)getSystemService(AUDIO_SERVICE);
-
-        setupEqualizer();
-        loadEqualizer();
-
         Notification n = new Notification(
 				R.drawable.equalizer,
 				"Earpiece", 
@@ -132,14 +89,15 @@ public class EarpieceService extends Service {
 
 		startForeground(Earpiece.NOTIFICATION_ID, n);
 		
+		settings.load(options);
+		settings.setEqualizer();
 	}
 	
 	@Override
 	public void onDestroy() {
-		if (eq != null) {
-			eq.setEnabled(false);
-			eq = null;
-		}
+		settings.load(options);
+		if (!settings.isEqualizerActive()) 
+			settings.closeEqualizer();
 		Earpiece.log("Destroying service, destroying notification =" + (Options.getNotify(options) != Options.NOTIFY_ALWAYS));
 		stopForeground(Options.getNotify(options) != Options.NOTIFY_ALWAYS);
 	}
