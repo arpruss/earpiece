@@ -15,7 +15,7 @@ public class OnBootReceiver extends BroadcastReceiver {
 		settings.load(PreferenceManager.getDefaultSharedPreferences(context));
 		settings.setEarpiece();
 		
-		if (settings.isEqualizerActive()) {
+		if (settings.needService()) {
 			Intent i = new Intent(context, EarpieceService.class);
 			context.startService(i);
 		}

@@ -34,6 +34,7 @@ import android.widget.TextView;
 public class Earpiece extends Activity implements ServiceConnection {
 	private static boolean DEBUG = true;
 	CheckBox earpieceBox;
+	CheckBox proximityBox;
 	CheckBox equalizerBox;
 	private SharedPreferences options;
 	private Messenger messenger;
@@ -66,26 +67,36 @@ public class Earpiece extends Activity implements ServiceConnection {
 
     	boostBar = (SeekBar)findViewById(R.id.boost);
         earpieceBox = (CheckBox)findViewById(R.id.earpiece);
+        proximityBox = (CheckBox)findViewById(R.id.proximity);
         equalizerBox = (CheckBox)findViewById(R.id.equalizer);
         equalizerScroll = (ScrollView)findViewById(R.id.equalizer_scroll);
         equalizerInside = (LinearLayout)findViewById(R.id.equalizer_inside);
 
     }
     
-    void updateEqualizerService(boolean value) {		
+    void updateService(boolean value) {		
 		if (value) {
 			restartService(true);
-			equalizerScroll.setVisibility(View.VISIBLE);
     	}
 		else {
 			stopService();
-			equalizerScroll.setVisibility(View.GONE);
 		}
+    }
+    
+    void updateService() {
+    	updateService(settings.needService());
     }
     
     private void updateBoostText(int progress) {
 		String t = "Boost: "+((progress*100+SLIDER_MAX/2)/SLIDER_MAX)+"%"; 
 		((TextView)findViewById(R.id.boost_value)).setText(t);
+    }
+    
+    private void updateEqualizerDisplay() {
+    	if (settings.isEqualizerActive())
+    		equalizerScroll.setVisibility(View.VISIBLE);
+    	else
+    		equalizerScroll.setVisibility(View.GONE);    		
     }
 
     void setupEqualizer() {
@@ -94,8 +105,6 @@ public class Earpiece extends Activity implements ServiceConnection {
     	if (!settings.haveEqualizer()) {
         	log("no equalizer");
     		equalizerBox.setVisibility(View.GONE);
-    		updateEqualizerService(false);
-    		
     		return;
     	}
     	
@@ -108,12 +117,11 @@ public class Earpiece extends Activity implements ServiceConnection {
     		public void onCheckedChanged(CompoundButton button, boolean value) {
     			settings.equalizerActive = value;
     			settings.save(options);
-    			updateEqualizerService(value);
-    			log("equalizer "+settings.isEqualizerActive());
+    			updateEqualizerDisplay();
+    			updateService();
     		}});
     	
     	equalizerBox.setChecked(settings.equalizerActive);
-    	updateEqualizerService(settings.equalizerActive);
     	
 		boostBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
 
@@ -140,6 +148,7 @@ public class Earpiece extends Activity implements ServiceConnection {
 		int progress = toSlider(options.getInt(Options.PREF_BOOST, 0), 0,
 				settings.rangeHigh);
 		boostBar.setProgress(progress);
+		updateEqualizerDisplay();
 		updateBoostText(progress);
     }
     
@@ -160,6 +169,7 @@ public class Earpiece extends Activity implements ServiceConnection {
     	settings.setEarpiece();
 
     	setupEqualizer();
+    	updateService();
 
     	earpieceBox.setChecked(settings.earpieceActive);		
     	earpieceBox.setOnCheckedChangeListener(new OnCheckedChangeListener(){
@@ -169,6 +179,24 @@ public class Earpiece extends Activity implements ServiceConnection {
     			settings.earpieceActive = value;
     			settings.save(options);
     			settings.setEarpiece();
+    			if (value && settings.haveProximity()) {
+    				proximityBox.setVisibility(View.VISIBLE);
+    			}
+    			else {
+    				proximityBox.setVisibility(View.INVISIBLE);
+    			}
+    			updateService();
+    		}});    	
+
+    	proximityBox.setChecked(settings.proximity);		
+    	proximityBox.setOnCheckedChangeListener(new OnCheckedChangeListener(){
+
+    		@Override
+    		public void onCheckedChanged(CompoundButton button, boolean value) {
+    			settings.proximity = value;
+    			settings.save(options);
+    			log("proximity="+value+" needService()"+settings.needService());
+    			updateService();
     		}});    	
     }
     
@@ -184,42 +212,42 @@ public class Earpiece extends Activity implements ServiceConnection {
 
     }
     
-	public static void setNotification(Context c, NotificationManager nm, boolean active) {
+	public static void setNotification(Context c, NotificationManager nm, Settings s) {
 		Notification n = new Notification(
-				active?R.drawable.equalizer:R.drawable.equalizeroff,
+				s.needService()?R.drawable.equalizer:R.drawable.equalizeroff,
 				"Earpiece", 
 				System.currentTimeMillis());
 		Intent i = new Intent(c, Earpiece.class);		
 		i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		n.flags = Notification.FLAG_NO_CLEAR | Notification.FLAG_ONGOING_EVENT; 
-		n.setLatestEventInfo(c, "Earpiece", "Equalizer is "+(active?"on":"off"), 
+		n.setLatestEventInfo(c, "Earpiece", s.describe(), 
 				PendingIntent.getActivity(c, 0, i, 0));
 		nm.notify(NOTIFICATION_ID, n);
 		log("notify "+n.toString());
 	}
 	
-	private void updateNotification() {
-		updateNotification(this, options, notificationManager, 
-				settings.isEqualizerActive());
-	}
+//	private void updateNotification() {
+//		updateNotification(this, options, notificationManager, 
+//				settings);
+//	}
 	
 	public static void updateNotification(Context c, 
-			SharedPreferences options, NotificationManager nm, boolean active) {
+			SharedPreferences options, NotificationManager nm, Settings s) {
 		log("notify "+Options.getNotify(options));
 		switch(Options.getNotify(options)) {
 		case Options.NOTIFY_NEVER:
 			nm.cancelAll();
 			break;
 		case Options.NOTIFY_AUTO:
-			if (active)
-				setNotification(c, nm, active);
+			if (s.needService())
+				setNotification(c, nm, s);
 			else {
 				log("trying to cancel notification");
 				nm.cancelAll();
 			}
 			break;
 		case Options.NOTIFY_ALWAYS:
-			setNotification(c, nm, active);
+			setNotification(c, nm, s);
 			break;
 		}
 	}

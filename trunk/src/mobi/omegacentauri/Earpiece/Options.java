@@ -18,7 +18,8 @@ public class Options extends PreferenceActivity {
 	public static final int NOTIFY_ALWAYS = 2;
 	public static final String PREF_AD = "lastAd";
 	public static final String PREF_BOOST = "boost";
-	public static String PREF_EARPIECE_ACTIVE = "earpieceActive";
+	public static final String PREF_EARPIECE_ACTIVE = "earpieceActive";
+	public static final String PREF_PROXIMITY = "proximity";
 	
 	@Override
 	public void onCreate(Bundle icicle) {
