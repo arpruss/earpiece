@@ -8,6 +8,8 @@ import java.util.regex.Pattern;
 
 import mobi.omegacentauri.Earpiece.R;
 
+import android.app.KeyguardManager;
+import android.app.KeyguardManager.KeyguardLock;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -18,6 +20,10 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Typeface;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Address;
 import android.media.AudioManager;
 import android.media.audiofx.Equalizer;
@@ -26,6 +32,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -40,12 +48,19 @@ import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-public class EarpieceService extends Service {
+public class EarpieceService extends Service implements SensorEventListener {
 	
 	private final Messenger messenger = new Messenger(new IncomingHandler());
+	private static final int PROXIMITY_SCREEN_OFF_WAKE_LOCK = 32;
 	private SharedPreferences options;
 	private Settings settings;
-	
+	private PowerManager pm;
+	private KeyguardManager km;
+	private WakeLock wakeLock = null;
+	private KeyguardLock guardLock = null;
+	private static final String PROXIMITY_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.proximity";
+	private static final String GUARD_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.guard";
+ 	
 	public class IncomingHandler extends Handler {
 		public static final int MSG_OFF = 0;
 		public static final int MSG_ON = 1;
@@ -74,7 +89,11 @@ public class EarpieceService extends Service {
 	public void onCreate() {
 		Earpiece.log("Creating service");
 		options = PreferenceManager.getDefaultSharedPreferences(this);
+	    pm = (PowerManager)getSystemService(POWER_SERVICE);
+	    km = (KeyguardManager)getSystemService(KEYGUARD_SERVICE);
+		
 		settings = new Settings(this);
+		settings.load(options);
 		
         Notification n = new Notification(
 				R.drawable.equalizer,
@@ -83,21 +102,27 @@ public class EarpieceService extends Service {
 		Intent i = new Intent(this, Earpiece.class);
 		i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		n.flags = Notification.FLAG_NO_CLEAR | Notification.FLAG_ONGOING_EVENT; 
-		n.setLatestEventInfo(this, "Earpiece", "Equalizer is on", 
+		n.setLatestEventInfo(this, "Earpiece", 
+				settings.describe(), 
 				PendingIntent.getActivity(this, 0, i, 0));
 		Earpiece.log("notify from service "+n.toString());
 
 		startForeground(Earpiece.NOTIFICATION_ID, n);
 		
-		settings.load(options);
-		settings.setEqualizer();
+		if (settings.isEqualizerActive())
+			settings.setEqualizer();
+		else
+			settings.disableEqualizer();
+		
+		updateProximity();
 	}
 	
 	@Override
 	public void onDestroy() {
 		settings.load(options);
-		if (!settings.isEqualizerActive()) 
-			settings.closeEqualizer();
+		if (settings.isEqualizerActive())  
+			settings.disableEqualizer();
+		disableProximity();
 		Earpiece.log("Destroying service, destroying notification =" + (Options.getNotify(options) != Options.NOTIFY_ALWAYS));
 		stopForeground(Options.getNotify(options) != Options.NOTIFY_ALWAYS);
 	}
@@ -110,6 +135,43 @@ public class EarpieceService extends Service {
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		onStart(intent, flags);
 		return START_STICKY;
+	}
+	
+	private void activateProximity() {
+		wakeLock = pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, 
+				PROXIMITY_TAG);
+		wakeLock.acquire();
+		guardLock = km.newKeyguardLock(GUARD_TAG);
+		guardLock.disableKeyguard();
+	}
+	
+	private void disableProximity() {
+		if (null != wakeLock) {
+			wakeLock.release();
+			wakeLock = null;
+		}
+		if (null != guardLock) {
+			guardLock.reenableKeyguard();
+			guardLock = null;
+		}		
+	}
+	
+	private void updateProximity() {
+		if (settings.isProximityActive())
+			activateProximity();
+		else
+			disableProximity();		
+	}
+
+	@Override
+	public void onAccuracyChanged(Sensor arg0, int arg1) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onSensorChanged(SensorEvent event) {
+		
 	}
 
 }

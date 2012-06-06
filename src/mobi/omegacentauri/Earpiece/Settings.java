@@ -2,6 +2,7 @@ package mobi.omegacentauri.Earpiece;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.audiofx.Equalizer;
 import android.os.Build;
@@ -13,12 +14,15 @@ public class Settings {
 	public short bands;
 	public short rangeLow;
 	public short rangeHigh;
+	public boolean proximity;
 	
 	private AudioManager am;
+	private SensorManager sm;
 	private Equalizer eq;
 
 	public Settings(Context context) {
 		am = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+		sm = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
 		eq = null;
 		
 		if (9 <= Build.VERSION.SDK_INT) {
@@ -38,6 +42,7 @@ public class Settings {
 	public void load(SharedPreferences pref) {
     	equalizerActive = pref.getBoolean(Options.PREF_EQUALIZER_ACTIVE, false);
     	earpieceActive = pref.getBoolean(Options.PREF_EARPIECE_ACTIVE, false);
+    	proximity = pref.getBoolean(Options.PREF_PROXIMITY, false) && haveProximity();
     	boostValue = pref.getInt(Options.PREF_BOOST, 0);
 	}
 	
@@ -45,6 +50,7 @@ public class Settings {
     	SharedPreferences.Editor ed = pref.edit();
     	ed.putBoolean(Options.PREF_EARPIECE_ACTIVE, earpieceActive);
     	ed.putBoolean(Options.PREF_EQUALIZER_ACTIVE, equalizerActive);
+    	ed.putBoolean(Options.PREF_PROXIMITY, proximity);
     	ed.putInt(Options.PREF_BOOST, boostValue);
     	ed.commit();
 	}
@@ -67,7 +73,7 @@ public class Settings {
 	public void setEqualizer() {
 		Earpiece.log("setEqualizer "+boostValue);
 		
-		if (eq == null)
+		if (eq == null) 
 			return;
 		
 		short v;
@@ -98,15 +104,55 @@ public class Settings {
 		return eq != null;
 	}
 
-	public void closeEqualizer() {
+	public void disableEqualizer() {
 		if (eq != null) {
 			Earpiece.log("Closing equalizer");
 			eq.setEnabled(false);
-			eq = null;
 		}
 	}
-
+	
+	public boolean haveProximity() {
+		return true;//sm.getSensorList(SensorManager.SENSOR_PROXIMITY).isEmpty();
+	}
+	
 	public boolean isEqualizerActive() {
 		return eq != null && equalizerActive;
+	}
+	
+	public boolean isProximityActive() {
+		return haveProximity() && earpieceActive && proximity;
+	}
+	
+	public boolean needService() {
+		return isEqualizerActive() || isProximityActive();
+	}
+	
+    private static String onoff(boolean v) {
+    	return v ? "on" : "off";
+    }
+    
+	public String describe() {
+		if (! earpieceActive && ! isEqualizerActive())
+			return "Earpiece application is off";
+		
+		String[] list = new String[3];
+		int count;
+		
+		count = 0;
+		if (earpieceActive)
+			list[count++] = "earpiece";
+		if (isProximityActive())
+			list[count++] = "proximity";
+		if (isEqualizerActive())
+			list[count++] = "equalizer";
+		
+		String out = "";
+		for (int i=0; i<count; i++) {
+			out = out + list[i];
+			if (i+1<count)
+				out += ", ";
+		}
+		
+		return out;
 	}
 }

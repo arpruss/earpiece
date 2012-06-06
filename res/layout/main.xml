@@ -14,6 +14,13 @@
         android:text="Audio through earpiece"/>
 
     <CheckBox
+        android:id="@+id/proximity"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:text="Use proximity sensor"/>
+
+    <CheckBox
         android:id="@+id/equalizer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
