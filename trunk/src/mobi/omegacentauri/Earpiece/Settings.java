@@ -60,13 +60,14 @@ public class Settings {
 		
 		if (earpieceActive) {
 			am.setMode(AudioManager.MODE_IN_CALL);
-			am.setRouting(AudioManager.MODE_NORMAL, AudioManager.ROUTE_EARPIECE, 
-					AudioManager.ROUTE_ALL);
+			am.setSpeakerphoneOn(false);
+//			am.setRouting(AudioManager.MODE_IN_CALL, AudioManager.ROUTE_EARPIECE,
+//					AudioManager.ROUTE_ALL);
 		}
 		else {
 			am.setMode(AudioManager.MODE_NORMAL);
-			am.setRouting(AudioManager.MODE_NORMAL, AudioManager.ROUTE_SPEAKER, 
-					AudioManager.ROUTE_ALL);
+//			am.setRouting(AudioManager.MODE_NORMAL, AudioManager.ROUTE_SPEAKER, 
+//					AudioManager.ROUTE_ALL);
 		}		
 	}
 	
