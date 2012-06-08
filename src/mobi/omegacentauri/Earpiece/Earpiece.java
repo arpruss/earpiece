@@ -198,6 +198,14 @@ public class Earpiece extends Activity implements ServiceConnection {
     			log("proximity="+value+" needService()"+settings.needService());
     			updateService();
     		}});    	
+
+		if (settings.earpieceActive && settings.haveProximity()) {
+			proximityBox.setVisibility(View.VISIBLE);
+		}
+		else {
+			log("hide proximity box");
+			proximityBox.setVisibility(View.INVISIBLE);
+		}
     }
     
     @Override
