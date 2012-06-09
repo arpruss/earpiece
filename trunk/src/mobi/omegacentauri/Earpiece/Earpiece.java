@@ -46,7 +46,7 @@ import android.widget.TextView;
 
 public class Earpiece extends Activity implements ServiceConnection {
 	private static boolean DEBUG = true;
-	static final String MARKET = "Market";
+	static final String MARKET = "Appstore";
 	CheckBox earpieceBox;
 	CheckBox proximityBox;
 	CheckBox equalizerBox;
