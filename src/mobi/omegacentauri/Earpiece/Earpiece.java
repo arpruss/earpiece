@@ -302,12 +302,11 @@ public class Earpiece extends Activity implements ServiceConnection {
     }
     
     private boolean have(String p) {
-    	return false;
-//    	try {
-//			return getPackageManager().getPackageInfo(p, 0) != null;
-//		} catch (NameNotFoundException e) {
-//			return false;
-//		}    	
+    	try {
+			return getPackageManager().getPackageInfo(p, 0) != null;
+		} catch (NameNotFoundException e) {
+			return false;
+		}    	
     }
     
     private boolean havePaidApp() {
