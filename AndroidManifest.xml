@@ -5,7 +5,10 @@
     android:versionName="0.003" >
 
     <uses-sdk android:minSdkVersion="3" />
-
+     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+	 <uses-permission android:name="android.permission.WAKE_LOCK" />    
+	 <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+	 
     <application
         android:icon="@drawable/icon"
         android:label="@string/app_name" >
@@ -23,6 +26,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+		<activity android:name="mobi.omegacentauri.Earpiece.Options" android:label="Options" />
         <receiver android:name="mobi.omegacentauri.Earpiece.OnBootReceiver" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -33,7 +37,5 @@
 
         <service android:name="mobi.omegacentauri.Earpiece.EarpieceService" />
 </application>
-     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
-	 <uses-permission android:name="android.permission.WAKE_LOCK" />    
-	 <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />    
+    
 </manifest>

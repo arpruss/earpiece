@@ -1,18 +1,27 @@
 package mobi.omegacentauri.Earpiece;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
 import mobi.omegacentauri.Earpiece.R;
 import mobi.omegacentauri.Earpiece.EarpieceService.IncomingHandler;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.media.AudioManager;
 import android.media.audiofx.Equalizer;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -20,8 +29,12 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
+import android.text.Html;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.Window;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -33,17 +46,17 @@ import android.widget.TextView;
 
 public class Earpiece extends Activity implements ServiceConnection {
 	private static boolean DEBUG = true;
+	static final String MARKET = "Market";
 	CheckBox earpieceBox;
 	CheckBox proximityBox;
 	CheckBox equalizerBox;
 	private SharedPreferences options;
 	private Messenger messenger;
-	private NotificationManager notificationManager;
 	private int SLIDER_MAX = 10000;
 	private SeekBar boostBar;
-	private View equalizerScroll;
-	private LinearLayout equalizerInside;
+	private View equalizerContainer;
 	private Settings settings;
+	private TextView ad;
 	
 	static final int NOTIFICATION_ID = 1;
 
@@ -63,18 +76,95 @@ public class Earpiece extends Activity implements ServiceConnection {
 		options = PreferenceManager.getDefaultSharedPreferences(this);
 		settings = new Settings(this);
 		
-    	notificationManager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-
     	boostBar = (SeekBar)findViewById(R.id.boost);
         earpieceBox = (CheckBox)findViewById(R.id.earpiece);
         proximityBox = (CheckBox)findViewById(R.id.proximity);
         equalizerBox = (CheckBox)findViewById(R.id.equalizer);
-        equalizerScroll = (ScrollView)findViewById(R.id.equalizer_scroll);
-        equalizerInside = (LinearLayout)findViewById(R.id.equalizer_inside);
+        equalizerContainer = (View)findViewById(R.id.equalizer_inside);
+        ad = (TextView)findViewById(R.id.ad);
+        
+        ad.setOnClickListener(new OnClickListener(){
 
+			@Override
+			public void onClick(View arg0) {
+				market();
+			}});
+        
+        versionUpdate();
     }
     
-    void updateService(boolean value) {		
+    void market() {
+    	Intent i = new Intent(Intent.ACTION_VIEW);
+    	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    	if (MARKET.contains("arket"))
+    		i.setData(Uri.parse("market://search?q=pub:\"Omega Centauri Software\""));
+    	else
+    		i.setData(Uri.parse("http://www.amazon.com/gp/mas/dl/android?p=mobi.omegacentauri.ScreenDim.Full&showAll=1"));            		
+    	startActivity(i);    	
+    }
+    
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.main, menu);
+		
+		return true;
+	}
+
+	private void message(String title, String msg) {
+		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+
+		alertDialog.setTitle(title);
+		alertDialog.setMessage(Html.fromHtml(msg));
+		alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, 
+				"OK", 
+				new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {} });
+		alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+			public void onCancel(DialogInterface dialog) {} });
+		alertDialog.show();
+
+	}
+	
+	private void show(String title, String filename) {
+		message(title, getAssetFile(filename));
+	}
+	
+	private void versionUpdate() {
+		int versionCode;
+		try {
+			versionCode = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+		} catch (NameNotFoundException e) {
+			versionCode = 0;
+		} 
+		
+		log("version "+versionCode);
+		
+		if (options.getInt(Options.PREF_LAST_VERSION, 0) != versionCode) {
+			options.edit().putInt(Options.PREF_LAST_VERSION, versionCode).commit();
+			show("Change log", "changelog.html");
+		}
+			
+	}
+	
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch(item.getItemId()) {
+		case R.id.change_log:
+			show("Change log", "changelog.html");
+			return true;
+		case R.id.help:
+			show("Questions and answers", "help.html");
+			return true;
+		case R.id.please_buy:
+			market();
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	void updateService(boolean value) {		
 		if (value) {
 			restartService(true);
     	}
@@ -94,9 +184,9 @@ public class Earpiece extends Activity implements ServiceConnection {
     
     private void updateEqualizerDisplay() {
     	if (settings.isEqualizerActive())
-    		equalizerScroll.setVisibility(View.VISIBLE);
+    		equalizerContainer.setVisibility(View.VISIBLE);
     	else
-    		equalizerScroll.setVisibility(View.GONE);    		
+    		equalizerContainer.setVisibility(View.GONE);    		
     }
 
     void setupEqualizer() {
@@ -206,9 +296,27 @@ public class Earpiece extends Activity implements ServiceConnection {
 			log("hide proximity box");
 			proximityBox.setVisibility(View.INVISIBLE);
 		}
+		
+		ad.setVisibility(havePaidApp() ? View.GONE : View.VISIBLE);
+		
     }
     
-    @Override
+    private boolean have(String p) {
+    	return false;
+//    	try {
+//			return getPackageManager().getPackageInfo(p, 0) != null;
+//		} catch (NameNotFoundException e) {
+//			return false;
+//		}    	
+    }
+    
+    private boolean havePaidApp() {
+    	return have("mobi.omegacentauri.ScreenDim.Full") ||
+    		have("mobi.pruss.force2sd") ||
+    		have("mobi.omegacentauri.LunarMap.Lite");
+	}
+
+	@Override
     public void onPause() {
     	super.onPause();
     	
@@ -330,5 +438,30 @@ public class Earpiece extends Activity implements ServiceConnection {
 		log("disconnected"); 
 //		stopService(new Intent(this, EarpieceService.class));
 		messenger = null;		
+	}
+
+	static private String getStreamFile(InputStream stream) {
+		BufferedReader reader;
+		try {
+			reader = new BufferedReader(new InputStreamReader(stream));
+
+			String text = "";
+			String line;
+			while (null != (line=reader.readLine()))
+				text = text + line;
+			return text;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			return "";
+		}
+	}
+	
+	public String getAssetFile(String assetName) {
+		try {
+			return getStreamFile(getAssets().open(assetName));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			return "";
+		}
 	}
 }

@@ -27,10 +27,10 @@
         android:textSize="18sp"
         android:text="Volume boost"/>
     
-	<ScrollView 
+	<!-- <ScrollView 
 	    android:id="@+id/equalizer_scroll"
 	    android:layout_width="fill_parent"
-	    android:layout_height="wrap_content">
+	    android:layout_height="wrap_content">  -->
 	
 	<LinearLayout
 	    android:id="@+id/equalizer_inside"
@@ -72,6 +72,19 @@
 	    
 	</LinearLayout>
 	    
-	</ScrollView>    
+	<!--  </ScrollView>  -->    
+
+	  <TextView
+	      android:id="@+id/ad"
+	      android:layout_width="220sp"
+	      android:layout_height="wrap_content"
+	      android:paddingLeft="5sp"
+	      android:paddingRight="5sp"
+	      android:paddingTop="10sp"
+	      android:paddingBottom="10sp"
+	      android:textColor="#0000FF"
+	      android:background="#B0B0B0"
+	      android:text="Tap here for more ω-Centauri apps, including the popular ScreenDim dimmer."
+		/>  	    
 
 </LinearLayout>
