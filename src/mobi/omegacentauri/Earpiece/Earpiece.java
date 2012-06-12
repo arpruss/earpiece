@@ -150,6 +150,10 @@ public class Earpiece extends Activity implements ServiceConnection {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch(item.getItemId()) {
+		case R.id.options:
+			Intent i = new Intent(this, Options.class);
+			startActivity(i);
+			return true;
 		case R.id.change_log:
 			show("Change log", "changelog.html");
 			return true;
@@ -170,6 +174,7 @@ public class Earpiece extends Activity implements ServiceConnection {
     	}
 		else {
 			stopService();
+	    	updateNotification();
 		}
     }
     
@@ -258,8 +263,9 @@ public class Earpiece extends Activity implements ServiceConnection {
     	settings.load(options);
     	settings.setEarpiece();
 
-    	setupEqualizer();
-    	updateService();
+    	setupEqualizer();		
+		updateService();
+		updateNotification();
 
     	earpieceBox.setChecked(settings.earpieceActive);		
     	earpieceBox.setOnCheckedChangeListener(new OnCheckedChangeListener(){
@@ -329,7 +335,7 @@ public class Earpiece extends Activity implements ServiceConnection {
     
 	public static void setNotification(Context c, NotificationManager nm, Settings s) {
 		Notification n = new Notification(
-				s.needService()?R.drawable.equalizer:R.drawable.equalizeroff,
+				s.somethingOn()?R.drawable.equalizer:R.drawable.equalizeroff,
 				"Earpiece", 
 				System.currentTimeMillis());
 		Intent i = new Intent(c, Earpiece.class);		
@@ -341,10 +347,11 @@ public class Earpiece extends Activity implements ServiceConnection {
 		log("notify "+n.toString());
 	}
 	
-//	private void updateNotification() {
-//		updateNotification(this, options, notificationManager, 
-//				settings);
-//	}
+	private void updateNotification() {
+		updateNotification(this, options, 
+				(NotificationManager)getSystemService(NOTIFICATION_SERVICE), 
+				settings);
+	}
 	
 	public static void updateNotification(Context c, 
 			SharedPreferences options, NotificationManager nm, Settings s) {

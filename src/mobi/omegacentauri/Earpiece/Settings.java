@@ -61,6 +61,9 @@ public class Settings {
 		if (earpieceActive) {
 			am.setMode(AudioManager.MODE_IN_CALL);
 			am.setSpeakerphoneOn(false);
+
+//			am.setParameters("noise_suppression=on");
+
 //			am.setRouting(AudioManager.MODE_IN_CALL, AudioManager.ROUTE_EARPIECE,
 //					AudioManager.ROUTE_ALL);
 		}
@@ -128,12 +131,16 @@ public class Settings {
 		return isEqualizerActive() || isProximityActive();
 	}
 	
-    private static String onoff(boolean v) {
-    	return v ? "on" : "off";
+//    private static String onoff(boolean v) {
+//    	return v ? "on" : "off";
+//    }
+    
+    public boolean somethingOn() {
+    	return earpieceActive || isEqualizerActive();
     }
     
 	public String describe() {
-		if (! earpieceActive && ! isEqualizerActive())
+		if (! somethingOn())
 			return "Earpiece application is off";
 		
 		String[] list = new String[3];

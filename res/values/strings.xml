@@ -3,7 +3,7 @@
 
     <string name="app_name">Earpiece</string>
     <string-array name="notification_labels">
-         <item>never</item> 
+         <item>never (service is less reliable)</item> 
         <item>when boost/proximity active</item>
 		<item>always</item>
         </string-array>
