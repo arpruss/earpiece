@@ -18,6 +18,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.media.AudioManager;
 import android.media.audiofx.Equalizer;
@@ -46,7 +47,7 @@ import android.widget.TextView;
 
 public class Earpiece extends Activity implements ServiceConnection {
 	private static boolean DEBUG = true;
-	static final String MARKET = "Appstore";
+	static final String MARKET = "Market";
 	CheckBox earpieceBox;
 	CheckBox proximityBox;
 	CheckBox equalizerBox;
@@ -78,6 +79,11 @@ public class Earpiece extends Activity implements ServiceConnection {
 		
     	boostBar = (SeekBar)findViewById(R.id.boost);
         earpieceBox = (CheckBox)findViewById(R.id.earpiece);
+        
+        earpieceBox.setVisibility(
+        		getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY) 
+        		   ? View.VISIBLE : View.GONE); 
+        
         proximityBox = (CheckBox)findViewById(R.id.proximity);
         equalizerBox = (CheckBox)findViewById(R.id.equalizer);
         equalizerContainer = (View)findViewById(R.id.equalizer_inside);
