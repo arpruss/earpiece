@@ -94,20 +94,24 @@ public class EarpieceService extends Service implements SensorEventListener {
 		
 		settings = new Settings(this);
 		settings.load(options);
-		
-        Notification n = new Notification(
-				R.drawable.equalizer,
-				"Earpiece", 
-				System.currentTimeMillis());
-		Intent i = new Intent(this, Earpiece.class);
-		i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		n.flags = Notification.FLAG_NO_CLEAR | Notification.FLAG_ONGOING_EVENT; 
-		n.setLatestEventInfo(this, "Earpiece", 
-				settings.describe(), 
-				PendingIntent.getActivity(this, 0, i, 0));
-		Earpiece.log("notify from service "+n.toString());
 
-		startForeground(Earpiece.NOTIFICATION_ID, n);
+		if (Options.getNotify(options) != Options.NOTIFY_NEVER) {
+	        Notification n = new Notification(
+					R.drawable.equalizer,
+					"Earpiece", 
+					System.currentTimeMillis());
+			Intent i = new Intent(this, Earpiece.class);
+			i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			n.flags = Notification.FLAG_NO_CLEAR | Notification.FLAG_ONGOING_EVENT; 
+			n.setLatestEventInfo(this, "Earpiece", 
+					settings.describe(), 
+					PendingIntent.getActivity(this, 0, i, 0));
+			Earpiece.log("notify from service "+n.toString());
+	
+			startForeground(Earpiece.NOTIFICATION_ID, n);
+		}
+		else {			
+		}
 		
 		if (settings.isEqualizerActive())
 			settings.setEqualizer();
@@ -120,11 +124,14 @@ public class EarpieceService extends Service implements SensorEventListener {
 	@Override
 	public void onDestroy() {
 		settings.load(options);
-		if (settings.isEqualizerActive())  
+//		if (settings.isEqualizerActive()) {
+			Earpiece.log("disabling equalizer");
 			settings.disableEqualizer();
+//		}
 		disableProximity();
-		Earpiece.log("Destroying service, destroying notification =" + (Options.getNotify(options) != Options.NOTIFY_ALWAYS));
-		stopForeground(Options.getNotify(options) != Options.NOTIFY_ALWAYS);
+		Earpiece.log("Destroying service");
+		if(Options.getNotify(options) != Options.NOTIFY_NEVER)
+			stopForeground(true);
 	}
 	
 	@Override
