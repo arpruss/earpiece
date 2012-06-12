@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
@@ -39,8 +40,12 @@ public class Options extends PreferenceActivity {
 		super.onStop();
 	}
 
+	private static boolean isKindle() {
+		return Build.MODEL.equalsIgnoreCase("Kindle Fire");		
+	}
+	
 	public static int getNotify(SharedPreferences options) {
-		int n = Integer.parseInt(options.getString(PREF_NOTIFY, "1"));
+		int n = Integer.parseInt(options.getString(PREF_NOTIFY, isKindle() ? "2" : "1"));
 //		if (n == NOTIFY_NEVER)
 //			return NOTIFY_AUTO;
 //		else
