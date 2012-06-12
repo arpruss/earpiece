@@ -324,7 +324,7 @@ public class Earpiece extends Activity implements ServiceConnection {
     private boolean havePaidApp() {
     	return have("mobi.omegacentauri.ScreenDim.Full") ||
     		have("mobi.pruss.force2sd") ||
-    		have("mobi.omegacentauri.LunarMap.Lite");
+    		have("mobi.omegacentauri.LunarMap.HD");
 	}
 
 	@Override
