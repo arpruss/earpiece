@@ -21,6 +21,7 @@ public class Options extends PreferenceActivity {
 	public static final String PREF_BOOST = "boost";
 	public static final String PREF_EARPIECE_ACTIVE = "earpieceActive";
 	public static final String PREF_PROXIMITY = "proximity";
+	public static final String PREF_AUTO_SPEAKER_PHONE = "autoSpeakerPhone";
 	public static String PREF_LAST_VERSION = "lastVersion1";
 	
 	@Override

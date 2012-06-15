@@ -36,6 +36,8 @@ import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
@@ -48,16 +50,21 @@ import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-public class EarpieceService extends Service implements SensorEventListener {
-	
+public class EarpieceService extends Service implements SensorEventListener   
+{	
 	private final Messenger messenger = new Messenger(new IncomingHandler());
 	private static final int PROXIMITY_SCREEN_OFF_WAKE_LOCK = 32;
 	private SharedPreferences options;
 	private Settings settings;
 	private PowerManager pm;
 	private KeyguardManager km;
+	private TelephonyManager tm;
 	private WakeLock wakeLock = null;
 	private KeyguardLock guardLock = null;
+	private boolean closeToPhone = false;
+	private boolean inCall = false;
+	private PhoneStateListener phoneStateListener;
+	protected boolean phoneOn;
 	private static final String PROXIMITY_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.proximity";
 	private static final String GUARD_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.guard";
  	
@@ -91,9 +98,14 @@ public class EarpieceService extends Service implements SensorEventListener {
 		options = PreferenceManager.getDefaultSharedPreferences(this);
 	    pm = (PowerManager)getSystemService(POWER_SERVICE);
 	    km = (KeyguardManager)getSystemService(KEYGUARD_SERVICE);
-		
 		settings = new Settings(this);
 		settings.load(options);
+
+		if (settings.haveTelephony())
+	    	tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
+		else
+			tm = null;
+		
 
 		if (Options.getNotify(options) != Options.NOTIFY_NEVER) {
 	        Notification n = new Notification(
@@ -119,6 +131,42 @@ public class EarpieceService extends Service implements SensorEventListener {
 			settings.disableEqualizer();
 		
 		updateProximity();
+		
+		if (tm != null) {
+			phoneStateListener = new PhoneStateListener() {
+				@Override
+				public
+				void onCallStateChanged(int state, String incomingNumber) {
+					Earpiece.log("phone state:" + state);
+					phoneOn = ( state == TelephonyManager.CALL_STATE_OFFHOOK );
+					updateSpeakerPhone();
+				}
+			};
+		}
+		
+		updateAutoSpeakerPhone();
+	}
+	
+	private void updateSpeakerPhone() {
+		if (settings.isAutoSpeakerPhoneActive()) {
+			Earpiece.log("updateSpeakerPhone "+phoneOn+" "+closeToPhone);
+			Earpiece.log("Speaker phone "+(phoneOn && !closeToPhone));
+			settings.audioManager.setSpeakerphoneOn(phoneOn && !closeToPhone);
+			updateProximity();
+		}
+	}
+	
+	private void updateAutoSpeakerPhone() {		
+		if (settings.isAutoSpeakerPhoneActive()) {
+			Earpiece.log("Auto speaker phone mode on");
+			settings.sensorManager.registerListener(this, settings.proximitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+			tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+		}
+		else {
+			Earpiece.log("Auto speaker phone mode off");
+			settings.sensorManager.unregisterListener(this, settings.proximitySensor);
+			tm.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
+		}
 	}
 	
 	@Override
@@ -164,7 +212,8 @@ public class EarpieceService extends Service implements SensorEventListener {
 	}
 	
 	private void updateProximity() {
-		if (settings.isProximityActive())
+		if (settings.isProximityActive() || 
+				(settings.isAutoSpeakerPhoneActive() && phoneOn))
 			activateProximity();
 		else
 			disableProximity();		
@@ -178,7 +227,10 @@ public class EarpieceService extends Service implements SensorEventListener {
 
 	@Override
 	public void onSensorChanged(SensorEvent event) {
-		
+		if (event.sensor == settings.proximitySensor) {
+			closeToPhone = event.values[0] < settings.proximitySensor.getMaximumRange();
+			phoneOn = (tm.getCallState() == TelephonyManager.CALL_STATE_OFFHOOK);
+			updateSpeakerPhone();
+		}
 	}
-
 }

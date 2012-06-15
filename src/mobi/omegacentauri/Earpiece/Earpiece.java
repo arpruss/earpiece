@@ -37,6 +37,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
+import android.view.ViewConfiguration;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.SeekBar;
@@ -80,13 +81,19 @@ public class Earpiece extends Activity implements ServiceConnection {
     	boostBar = (SeekBar)findViewById(R.id.boost);
         earpieceBox = (CheckBox)findViewById(R.id.earpiece);
         
-        earpieceBox.setVisibility(
-        		getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY) 
-        		   ? View.VISIBLE : View.GONE); 
+        earpieceBox.setVisibility(settings.haveTelephony() ? 
+        		   View.VISIBLE : View.GONE); 
         
         proximityBox = (CheckBox)findViewById(R.id.proximity);
+        proximityBox.setVisibility(
+        		settings.haveProximity()? View.VISIBLE : View.GONE);
         equalizerBox = (CheckBox)findViewById(R.id.equalizer);
         equalizerContainer = (View)findViewById(R.id.equalizer_inside);
+        
+        findViewById(R.id.more).setVisibility(
+        		settings.hasMenuKey() ?
+        				View.GONE : View.VISIBLE);
+        
         ad = (TextView)findViewById(R.id.ad);
         
         ad.setOnClickListener(new OnClickListener(){
@@ -476,4 +483,8 @@ public class Earpiece extends Activity implements ServiceConnection {
 			return "";
 		}
 	}
+	
+	public void optionsClick(View v) {
+		openOptionsMenu();		
+	}	
 }

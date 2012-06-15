@@ -1,28 +1,42 @@
 package mobi.omegacentauri.Earpiece;
 
+import java.util.List;
+
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.audiofx.Equalizer;
 import android.os.Build;
+import android.view.ViewConfiguration;
 
 public class Settings {
 	public boolean earpieceActive;
 	public boolean equalizerActive;
+	public boolean autoSpeakerPhoneActive;
 	public int boostValue;
 	public short bands;
 	public short rangeLow;
 	public short rangeHigh;
 	public boolean proximity;
-	
-	private AudioManager am;
-	private SensorManager sm;
+
+	public Sensor proximitySensor;
+	public AudioManager audioManager;
+	public SensorManager sensorManager;
+	private PackageManager pm;
 	private Equalizer eq;
+	private Context context;
 
 	public Settings(Context context) {
-		am = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
-		sm = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
+		this.context = context;
+		audioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+		sensorManager = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
+		pm = (PackageManager)context.getPackageManager();
+		
+		proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+		
 		eq = null;
 		
 		if (9 <= Build.VERSION.SDK_INT) {
@@ -42,6 +56,8 @@ public class Settings {
 	public void load(SharedPreferences pref) {
     	equalizerActive = pref.getBoolean(Options.PREF_EQUALIZER_ACTIVE, false);
     	earpieceActive = pref.getBoolean(Options.PREF_EARPIECE_ACTIVE, false);
+    	autoSpeakerPhoneActive = pref.getBoolean(Options.PREF_AUTO_SPEAKER_PHONE, false)
+    	   && haveProximity(); 
     	proximity = pref.getBoolean(Options.PREF_PROXIMITY, false) && haveProximity();
     	boostValue = pref.getInt(Options.PREF_BOOST, 0);
 	}
@@ -50,26 +66,27 @@ public class Settings {
     	SharedPreferences.Editor ed = pref.edit();
     	ed.putBoolean(Options.PREF_EARPIECE_ACTIVE, earpieceActive);
     	ed.putBoolean(Options.PREF_EQUALIZER_ACTIVE, equalizerActive);
+    	ed.putBoolean(Options.PREF_AUTO_SPEAKER_PHONE, autoSpeakerPhoneActive);
     	ed.putBoolean(Options.PREF_PROXIMITY, proximity);
     	ed.putInt(Options.PREF_BOOST, boostValue);
     	ed.commit();
 	}
 	
 	public void setEarpiece() {
-		am.setSpeakerphoneOn(false);
+		audioManager.setSpeakerphoneOn(false);
 		
 		if (earpieceActive) {
-			am.setMode(AudioManager.MODE_IN_CALL);
-			am.setSpeakerphoneOn(false);
+			audioManager.setMode(AudioManager.MODE_IN_CALL);
+			audioManager.setSpeakerphoneOn(false);
 
-//			am.setParameters("noise_suppression=on");
+//			audioManager.setParameters("noise_suppression=on");
 
-//			am.setRouting(AudioManager.MODE_IN_CALL, AudioManager.ROUTE_EARPIECE,
+//			audioManager.setRouting(AudioManager.MODE_IN_CALL, AudioManager.ROUTE_EARPIECE,
 //					AudioManager.ROUTE_ALL);
 		}
 		else {
-			am.setMode(AudioManager.MODE_NORMAL);
-//			am.setRouting(AudioManager.MODE_NORMAL, AudioManager.ROUTE_SPEAKER, 
+			audioManager.setMode(AudioManager.MODE_NORMAL);
+//			audioManager.setRouting(AudioManager.MODE_NORMAL, AudioManager.ROUTE_SPEAKER, 
 //					AudioManager.ROUTE_ALL);
 		}		
 	}
@@ -116,7 +133,7 @@ public class Settings {
 	}
 	
 	public boolean haveProximity() {
-		return true;//sm.getSensorList(SensorManager.SENSOR_PROXIMITY).isEmpty();
+		return proximitySensor != null;
 	}
 	
 	public boolean isEqualizerActive() {
@@ -127,8 +144,13 @@ public class Settings {
 		return haveProximity() && earpieceActive && proximity;
 	}
 	
+	public boolean isAutoSpeakerPhoneActive() {
+		return haveProximity() && autoSpeakerPhoneActive;
+	}
+	
 	public boolean needService() {
-		return isEqualizerActive() || isProximityActive();
+		return isEqualizerActive() || isProximityActive() ||
+			isAutoSpeakerPhoneActive();
 	}
 	
 //    private static String onoff(boolean v) {
@@ -136,14 +158,14 @@ public class Settings {
 //    }
     
     public boolean somethingOn() {
-    	return earpieceActive || isEqualizerActive();
+    	return earpieceActive || isEqualizerActive() || isAutoSpeakerPhoneActive();
     }
     
 	public String describe() {
 		if (! somethingOn())
 			return "Earpiece application is off";
 		
-		String[] list = new String[3];
+		String[] list = new String[4];
 		int count;
 		
 		count = 0;
@@ -153,6 +175,8 @@ public class Settings {
 			list[count++] = "proximity";
 		if (isEqualizerActive())
 			list[count++] = "equalizer";
+		if (isAutoSpeakerPhoneActive())
+			list[count++] = "auto speaker";
 		
 		String out = "";
 		for (int i=0; i<count; i++) {
@@ -162,5 +186,20 @@ public class Settings {
 		}
 		
 		return out;
+	}
+
+	public boolean haveTelephony() {
+		return pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);	
+	}
+	
+	public static boolean isKindle() {
+		return Build.MODEL.equalsIgnoreCase("Kindle Fire");		
+	}
+	
+	public boolean hasMenuKey() {
+		if (isKindle() || Build.VERSION.SDK_INT < 14)
+			return true;
+		return ViewConfiguration.get(this.context).hasPermanentMenuKey();
+		
 	}
 }
