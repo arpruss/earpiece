@@ -7,4 +7,10 @@
 	android:entryValues="@array/notifications"
 	android:key="notification"
 	android:defaultValue="1"/>
+<CheckBoxPreference 
+    android:title="Auto speaker phone"
+    android:summary="Turn speaker phone on in calls whenever phone is moved away from face."
+    android:defaultValue="false"
+    android:key="autoSpeakerPhone"
+    />
 </PreferenceScreen>
