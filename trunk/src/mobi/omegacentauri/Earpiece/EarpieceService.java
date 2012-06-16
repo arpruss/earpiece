@@ -61,9 +61,11 @@ public class EarpieceService extends Service implements SensorEventListener
 	private TelephonyManager tm;
 	private WakeLock wakeLock = null;
 	private KeyguardLock guardLock = null;
+	private boolean closeToPhoneValid = false;
 	private boolean closeToPhone = false;
+	private Sensor proximitySensor = null;
 	private PhoneStateListener phoneStateListener;
-	protected boolean phoneOn;
+	protected boolean phoneOn = false;
 	private static final String PROXIMITY_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.proximity";
 	private static final String GUARD_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.guard";
  	
@@ -138,6 +140,21 @@ public class EarpieceService extends Service implements SensorEventListener
 				void onCallStateChanged(int state, String incomingNumber) {
 					Earpiece.log("phone state:" + state);
 					phoneOn = ( state == TelephonyManager.CALL_STATE_OFFHOOK );
+					closeToPhoneValid = false;
+					if (phoneOn) {
+						if (proximitySensor == null) {
+							proximitySensor = settings.proximitySensor;
+							settings.sensorManager.registerListener(EarpieceService.this, proximitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+							Earpiece.log("Registering proximity sensor");
+						}
+					}
+					else {
+						if (proximitySensor != null) {
+							settings.sensorManager.unregisterListener(EarpieceService.this, proximitySensor);
+							proximitySensor = null;
+							Earpiece.log("Unregistering proximity sensor");
+						}
+					}
 					updateSpeakerPhone();
 				}
 			};
@@ -150,7 +167,8 @@ public class EarpieceService extends Service implements SensorEventListener
 		if (settings.isAutoSpeakerPhoneActive()) {
 			Earpiece.log("updateSpeakerPhone "+phoneOn+" "+closeToPhone);
 			Earpiece.log("Speaker phone "+(phoneOn && !closeToPhone));
-			settings.audioManager.setSpeakerphoneOn(phoneOn && !closeToPhone);
+			if (closeToPhoneValid)
+				settings.audioManager.setSpeakerphoneOn(phoneOn && !closeToPhone);
 			updateProximity();
 		}
 	}
@@ -158,12 +176,10 @@ public class EarpieceService extends Service implements SensorEventListener
 	private void updateAutoSpeakerPhone() {		
 		if (settings.isAutoSpeakerPhoneActive()) {
 			Earpiece.log("Auto speaker phone mode on");
-			settings.sensorManager.registerListener(this, settings.proximitySensor, SensorManager.SENSOR_DELAY_NORMAL);
 			tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
 		}
 		else {
 			Earpiece.log("Auto speaker phone mode off");
-			settings.sensorManager.unregisterListener(this, settings.proximitySensor);
 			tm.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
 		}
 	}
@@ -177,6 +193,10 @@ public class EarpieceService extends Service implements SensorEventListener
 //		}
 		disableProximity();
 		Earpiece.log("Destroying service");
+		if (proximitySensor != null) {
+			settings.sensorManager.unregisterListener(EarpieceService.this, proximitySensor);
+			proximitySensor = null;
+		}
 		if(Options.getNotify(options) != Options.NOTIFY_NEVER)
 			stopForeground(true);
 	}
@@ -233,6 +253,7 @@ public class EarpieceService extends Service implements SensorEventListener
 	public void onSensorChanged(SensorEvent event) {
 		if (event.sensor == settings.proximitySensor) {
 			closeToPhone = event.values[0] < settings.proximitySensor.getMaximumRange();
+			closeToPhoneValid = true;
 			phoneOn = (tm.getCallState() == TelephonyManager.CALL_STATE_OFFHOOK);
 			Earpiece.log("onSensorChanged, phone = "+tm.getCallState());
 			updateSpeakerPhone();
