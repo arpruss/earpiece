@@ -62,7 +62,6 @@ public class EarpieceService extends Service implements SensorEventListener
 	private WakeLock wakeLock = null;
 	private KeyguardLock guardLock = null;
 	private boolean closeToPhone = false;
-	private boolean inCall = false;
 	private PhoneStateListener phoneStateListener;
 	protected boolean phoneOn;
 	private static final String PROXIMITY_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.proximity";
@@ -193,14 +192,19 @@ public class EarpieceService extends Service implements SensorEventListener
 	}
 	
 	private void activateProximity() {
-		wakeLock = pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, 
-				PROXIMITY_TAG);
-		wakeLock.acquire();
-		guardLock = km.newKeyguardLock(GUARD_TAG);
-		guardLock.disableKeyguard();
+		if (wakeLock == null) {
+			wakeLock = pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, 
+					PROXIMITY_TAG);
+			wakeLock.acquire();
+		}
+		if (guardLock == null) {
+			guardLock = km.newKeyguardLock(GUARD_TAG);
+			guardLock.disableKeyguard();
+		}
 	}
 	
 	private void disableProximity() {
+		Earpiece.log("disabling proximity");
 		if (null != wakeLock) {
 			wakeLock.release();
 			wakeLock = null;
@@ -230,6 +234,7 @@ public class EarpieceService extends Service implements SensorEventListener
 		if (event.sensor == settings.proximitySensor) {
 			closeToPhone = event.values[0] < settings.proximitySensor.getMaximumRange();
 			phoneOn = (tm.getCallState() == TelephonyManager.CALL_STATE_OFFHOOK);
+			Earpiece.log("onSensorChanged, phone = "+tm.getCallState());
 			updateSpeakerPhone();
 		}
 	}
