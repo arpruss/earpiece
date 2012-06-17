@@ -13,4 +13,9 @@
     android:defaultValue="false"
     android:key="autoSpeakerPhone"
     />
+<CheckBoxPreference 
+    android:title="Disable lock"
+    android:defaultValue="false"
+    android:key="disableKeyguard"
+    />
 </PreferenceScreen>

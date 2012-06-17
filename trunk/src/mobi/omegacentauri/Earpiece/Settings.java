@@ -15,6 +15,7 @@ import android.view.ViewConfiguration;
 public class Settings {
 	public boolean earpieceActive;
 	public boolean equalizerActive;
+	public boolean disableKeyguardActive;
 	public boolean autoSpeakerPhoneActive;
 	public int boostValue;
 	public short bands;
@@ -60,6 +61,7 @@ public class Settings {
     	   && haveProximity(); 
     	proximity = pref.getBoolean(Options.PREF_PROXIMITY, false) && haveProximity();
     	boostValue = pref.getInt(Options.PREF_BOOST, 0);
+    	disableKeyguardActive = pref.getBoolean(Options.PREF_DISABLE_KEYGUARD, false);
 	}
 	
 	public void save(SharedPreferences pref) {
@@ -68,6 +70,7 @@ public class Settings {
     	ed.putBoolean(Options.PREF_EQUALIZER_ACTIVE, equalizerActive);
     	ed.putBoolean(Options.PREF_AUTO_SPEAKER_PHONE, autoSpeakerPhoneActive);
     	ed.putBoolean(Options.PREF_PROXIMITY, proximity);
+    	ed.putBoolean(Options.PREF_DISABLE_KEYGUARD, disableKeyguardActive);
     	ed.putInt(Options.PREF_BOOST, boostValue);
     	ed.commit();
 	}
@@ -140,6 +143,10 @@ public class Settings {
 		return eq != null && equalizerActive;
 	}
 	
+	public boolean isDisableKeyguardActive() {
+		return disableKeyguardActive;
+	}
+	
 	public boolean isProximityActive() {
 		return haveProximity() && earpieceActive && proximity;
 	}
@@ -150,7 +157,7 @@ public class Settings {
 	
 	public boolean needService() {
 		return isEqualizerActive() || isProximityActive() ||
-			isAutoSpeakerPhoneActive();
+			isAutoSpeakerPhoneActive() || isDisableKeyguardActive();
 	}
 	
 //    private static String onoff(boolean v) {
@@ -158,14 +165,15 @@ public class Settings {
 //    }
     
     public boolean somethingOn() {
-    	return earpieceActive || isEqualizerActive() || isAutoSpeakerPhoneActive();
+    	return earpieceActive || isEqualizerActive() || isAutoSpeakerPhoneActive() || 
+    	isDisableKeyguardActive();
     }
     
 	public String describe() {
 		if (! somethingOn())
 			return "Earpiece application is off";
 		
-		String[] list = new String[4];
+		String[] list = new String[5];
 		int count;
 		
 		count = 0;
@@ -174,9 +182,11 @@ public class Settings {
 		if (isProximityActive())
 			list[count++] = "proximity";
 		if (isEqualizerActive())
-			list[count++] = "equalizer";
+			list[count++] = "boost";
 		if (isAutoSpeakerPhoneActive())
 			list[count++] = "auto speaker";
+		if (isDisableKeyguardActive())
+			list[count++] = "no lock";
 		
 		String out = "";
 		for (int i=0; i<count; i++) {
