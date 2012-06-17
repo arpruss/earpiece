@@ -36,6 +36,7 @@ public class EarpieceService extends Service implements SensorEventListener
 	private boolean closeToPhone = false;
 	private Sensor proximitySensor = null;
 	private PhoneStateListener phoneStateListener;
+	private long t0;
 	protected boolean phoneOn = false;
 	private static final String PROXIMITY_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.proximity";
 	private static final String GUARD_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.guard";
@@ -67,7 +68,8 @@ public class EarpieceService extends Service implements SensorEventListener
 	
 	@Override
 	public void onCreate() {
-		Earpiece.log("Creating service");
+		t0 = System.currentTimeMillis();
+		Earpiece.log("create service "+t0);
 		options = PreferenceManager.getDefaultSharedPreferences(this);
 	    pm = (PowerManager)getSystemService(POWER_SERVICE);
 	    km = (KeyguardManager)getSystemService(KEYGUARD_SERVICE);
@@ -122,9 +124,7 @@ public class EarpieceService extends Service implements SensorEventListener
 					}
 					else {
 						if (proximitySensor != null) {
-							settings.sensorManager.unregisterListener(EarpieceService.this, proximitySensor);
-							proximitySensor = null;
-							Earpiece.log("Unregistering proximity sensor");
+							disableProximitySensor();
 						}
 					}
 					updateSpeakerPhone();
@@ -136,6 +136,15 @@ public class EarpieceService extends Service implements SensorEventListener
 		if (options.getBoolean(Options.PREF_DISABLE_KEYGUARD, false)) {
 			enableDisableKeyguard();
 		}
+	}
+	
+	private void disableProximitySensor() {
+		if (proximitySensor == null)
+			return;
+		
+		Earpiece.log("Unregistering proximity sensor");		
+		settings.sensorManager.unregisterListener(EarpieceService.this, proximitySensor);
+		proximitySensor = null;
 	}
 	
 	private void updateSpeakerPhone() {
@@ -161,6 +170,8 @@ public class EarpieceService extends Service implements SensorEventListener
 	
 	@Override
 	public void onDestroy() {
+		Earpiece.log("stop service "+t0);
+
 		settings.load(options);
 //		if (settings.isEqualizerActive()) {
 			Earpiece.log("disabling equalizer");
@@ -168,11 +179,11 @@ public class EarpieceService extends Service implements SensorEventListener
 //		}
 		disableProximity();
 		disableDisableKeyguard();
-		Earpiece.log("Destroying service");
-		if (proximitySensor != null) {
-			settings.sensorManager.unregisterListener(EarpieceService.this, proximitySensor);
-			proximitySensor = null;
+		disableProximitySensor();
+		if (tm != null && phoneStateListener != null) {
+			tm.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
 		}
+		
 		if(Options.getNotify(options) != Options.NOTIFY_NEVER)
 			stopForeground(true);
 	}
@@ -189,8 +200,10 @@ public class EarpieceService extends Service implements SensorEventListener
 	
 	private void activateProximity() {
 		if (wakeLock == null) {
+			Earpiece.log("activating proximity "+t0);
 			wakeLock = pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, 
 					PROXIMITY_TAG);
+			wakeLock.setReferenceCounted(false);
 			wakeLock.acquire();
 		}
 		enableDisableKeyguard();
@@ -211,11 +224,17 @@ public class EarpieceService extends Service implements SensorEventListener
 	}
 	
 	private void disableProximity() {
-		Earpiece.log("disabling proximity");
+//		if (null == wakeLock) {
+//			wakeLock = pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, 
+//					PROXIMITY_TAG);
+//			wakeLock.setReferenceCounted(false);
+//		}
 		if (null != wakeLock) {
+			Earpiece.log("disabling proximity "+t0);
 			wakeLock.release();
 			wakeLock = null;
 		}
+
 		if (! settings.disableKeyguardActive) 
 			disableDisableKeyguard();
 	}
