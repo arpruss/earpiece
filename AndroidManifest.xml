@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="mobi.omegacentauri.Earpiece"
     android:versionCode="9"
-    android:versionName="1.02.1" >
+    android:versionName="1.02.2" >
 
     <uses-sdk android:minSdkVersion="3" />
      <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>

@@ -1,54 +1,25 @@
 package mobi.omegacentauri.Earpiece;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import mobi.omegacentauri.Earpiece.R;
-
 import android.app.KeyguardManager;
 import android.app.KeyguardManager.KeyguardLock;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.graphics.PixelFormat;
-import android.graphics.Typeface;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.location.Address;
-import android.media.AudioManager;
-import android.media.audiofx.Equalizer;
-import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
-import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
-import android.util.Log;
-import android.util.TypedValue;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.View.OnFocusChangeListener;
-import android.view.Gravity;
-import android.view.View.OnTouchListener;
-import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 public class EarpieceService extends Service implements SensorEventListener   
 {	
@@ -81,6 +52,7 @@ public class EarpieceService extends Service implements SensorEventListener
 			case MSG_RELOAD_SETTINGS:
 				settings.load(options);
 				settings.setEqualizer();
+				updateProximity();
 				break;
 			default:
 				super.handleMessage(m);
@@ -161,6 +133,9 @@ public class EarpieceService extends Service implements SensorEventListener
 		}
 		
 		updateAutoSpeakerPhone();
+		if (options.getBoolean(Options.PREF_DISABLE_KEYGUARD, false)) {
+			enableDisableKeyguard();
+		}
 	}
 	
 	private void updateSpeakerPhone() {
@@ -192,6 +167,7 @@ public class EarpieceService extends Service implements SensorEventListener
 			settings.disableEqualizer();
 //		}
 		disableProximity();
+		disableDisableKeyguard();
 		Earpiece.log("Destroying service");
 		if (proximitySensor != null) {
 			settings.sensorManager.unregisterListener(EarpieceService.this, proximitySensor);
@@ -217,6 +193,17 @@ public class EarpieceService extends Service implements SensorEventListener
 					PROXIMITY_TAG);
 			wakeLock.acquire();
 		}
+		enableDisableKeyguard();
+	}
+	
+	private void disableDisableKeyguard() {
+		if (null != guardLock) {
+			guardLock.reenableKeyguard();
+			guardLock = null;
+		}
+	}
+	
+	private void enableDisableKeyguard() {
 		if (guardLock == null) {
 			guardLock = km.newKeyguardLock(GUARD_TAG);
 			guardLock.disableKeyguard();
@@ -229,10 +216,8 @@ public class EarpieceService extends Service implements SensorEventListener
 			wakeLock.release();
 			wakeLock = null;
 		}
-		if (null != guardLock) {
-			guardLock.reenableKeyguard();
-			guardLock = null;
-		}		
+		if (! settings.disableKeyguardActive) 
+			disableDisableKeyguard();
 	}
 	
 	private void updateProximity() {
