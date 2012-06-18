@@ -58,7 +58,8 @@ public class Earpiece extends Activity implements ServiceConnection {
 	private SeekBar boostBar;
 	private View equalizerContainer;
 	private Settings settings;
-	private TextView ad;
+//	private TextView ad;
+	private int versionCode;
 	
 	static final int NOTIFICATION_ID = 1;
 
@@ -72,6 +73,12 @@ public class Earpiece extends Activity implements ServiceConnection {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+		try {
+			versionCode = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+		} catch (NameNotFoundException e) {
+			versionCode = 0;
+		} 
+		
 		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
 
@@ -91,18 +98,18 @@ public class Earpiece extends Activity implements ServiceConnection {
         equalizerContainer = (View)findViewById(R.id.equalizer_inside);
         
         findViewById(R.id.more).setVisibility(
-        		settings.hasMenuKey() ?
+        		(false&&settings.hasMenuKey()) ?
         				View.GONE : View.VISIBLE);
-        
-        ad = (TextView)findViewById(R.id.ad);
-        
-        ad.setOnClickListener(new OnClickListener(){
-
-			@Override
-			public void onClick(View arg0) {
-				market();
-			}});
-        
+//        
+//        ad = (TextView)findViewById(R.id.ad);
+//        
+//        ad.setOnClickListener(new OnClickListener(){
+//
+//			@Override
+//			public void onClick(View arg0) {
+//				market();
+//			}});
+//        
         versionUpdate();
     }
     
@@ -142,21 +149,47 @@ public class Earpiece extends Activity implements ServiceConnection {
 		message(title, getAssetFile(filename));
 	}
 	
+	private void warning() {
+		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+
+		settings.boostValue = 0;
+		settings.save(options);
+		settings.disableEqualizer();
+		boostBar.setProgress(0);
+		reloadSettings();
+
+		alertDialog.setTitle("Warning");
+		alertDialog.setMessage(Html.fromHtml(getAssetFile("warning.html")));
+		alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, 
+				"Yes", 
+				new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				options.edit().putInt(Options.PREF_WARNED_LAST_VERSION, versionCode).commit();
+			} });
+		alertDialog.setButton(DialogInterface.BUTTON_NEGATIVE, 
+				"No", 
+				new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				Earpiece.this.finish();
+			} });
+		alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+			public void onCancel(DialogInterface dialog) {
+			Earpiece.this.finish();
+			} });
+		alertDialog.show();
+
+	}
+	
 	private void versionUpdate() {
-		int versionCode;
-		try {
-			versionCode = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
-		} catch (NameNotFoundException e) {
-			versionCode = 0;
-		} 
-		
 		log("version "+versionCode);
 		
 		if (options.getInt(Options.PREF_LAST_VERSION, 0) != versionCode) {
 			options.edit().putInt(Options.PREF_LAST_VERSION, versionCode).commit();
 			show("Change log", "changelog.html");
 		}
-			
+		if (options.getInt(Options.PREF_WARNED_LAST_VERSION, 0) != versionCode) {
+			warning();
+		}			
 	}
 	
 
@@ -239,7 +272,7 @@ public class Earpiece extends Activity implements ServiceConnection {
 				if (fromUser) {
 					settings.boostValue = fromSlider(progress,0,settings.rangeHigh);
 					settings.save(options);
-					sendMessage(IncomingHandler.MSG_RELOAD_SETTINGS, 0, 0);
+					reloadSettings();
 				}
 				updateBoostText(progress);
 			}
@@ -260,7 +293,11 @@ public class Earpiece extends Activity implements ServiceConnection {
 		updateBoostText(progress);
     }
     
-    private int fromSlider(int value, int min, int max) {
+    protected void reloadSettings() {
+		sendMessage(IncomingHandler.MSG_RELOAD_SETTINGS, 0, 0);
+	}
+
+	private int fromSlider(int value, int min, int max) {
     	return (min * (SLIDER_MAX - value) + max * value + SLIDER_MAX/2) / SLIDER_MAX;
     }
 
@@ -316,23 +353,23 @@ public class Earpiece extends Activity implements ServiceConnection {
 			proximityBox.setVisibility(View.INVISIBLE);
 		}
 		
-		ad.setVisibility(havePaidApp() ? View.GONE : View.VISIBLE);
+//		ad.setVisibility(havePaidApp() ? View.GONE : View.VISIBLE);
 		
     }
     
-    private boolean have(String p) {
-    	try {
-			return getPackageManager().getPackageInfo(p, 0) != null;
-		} catch (NameNotFoundException e) {
-			return false;
-		}    	
-    }
-    
-    private boolean havePaidApp() {
-    	return have("mobi.omegacentauri.ScreenDim.Full") ||
-    		have("mobi.pruss.force2sd") ||
-    		have("mobi.omegacentauri.LunarMap.HD");
-	}
+//    private boolean have(String p) {
+//    	try {
+//			return getPackageManager().getPackageInfo(p, 0) != null;
+//		} catch (NameNotFoundException e) {
+//			return false;
+//		}    	
+//    }
+//    
+//    private boolean havePaidApp() {
+//    	return have("mobi.omegacentauri.ScreenDim.Full") ||
+//    		have("mobi.pruss.force2sd") ||
+//    		have("mobi.omegacentauri.LunarMap.HD");
+//	}
 
 	@Override
     public void onPause() {

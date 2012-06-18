@@ -63,47 +63,31 @@
     android:layout_marginBottom="10dip"
     android:max="10000"
     />
+
 </LinearLayout>
+    <LinearLayout 
+        android:layout_width="match_parent" 
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        >
 	  <TextView
 	      android:id="@+id/warn"
-	      android:layout_width="wrap_content"
+	      android:layout_width="0dip"
+	      android:layout_weight="1"
 	      android:layout_height="wrap_content"
-	      android:text="Warning: More than 30% may damage speakers/hearing."/>  	    
-	    
-	</LinearLayout>
-	    
-	<!--  </ScrollView>  -->    
-    <LinearLayout 
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content" 
-        android:gravity="center_horizontal"
-        android:orientation="horizontal"
-        >
-	  <TextView
-	      android:id="@+id/ad"
-	      android:layout_width="220sp"
-	      android:layout_height="wrap_content"
-	      android:paddingLeft="5sp"
-	      android:paddingRight="5sp"
-	      android:paddingTop="10sp"
-	      android:paddingBottom="10sp"
-	      android:textColor="#0000FF"
-	      android:background="#B0B0B0"
-	      android:text="Tap here for more ω-Centauri apps, including the popular ScreenDim dimmer."
-		/>
-	  </LinearLayout>
-    <LinearLayout 
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content" 
-        android:gravity="right"
-        android:orientation="horizontal"
-        >
+	      android:textSize="13sp"
+          android:text="ALL USE IS AT YOUR OWN RISK. Especially be careful of boosts above 40%." 
+        />
     	  <Button 
     	      android:id="@+id/more"
     	      android:text="More..."
     	      android:layout_width="wrap_content"
     	      android:layout_height="wrap_content"
     	      android:onClick="optionsClick"/>
-    	      </LinearLayout>   	    
+	  	    
+	</LinearLayout>
+	</LinearLayout>
+    	    
 
 </LinearLayout>
