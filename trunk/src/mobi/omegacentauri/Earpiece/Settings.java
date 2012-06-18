@@ -29,6 +29,7 @@ public class Settings {
 	private PackageManager pm;
 	private Equalizer eq;
 	private Context context;
+	private boolean shape = true;
 
 	public Settings(Context context) {
 		this.context = context;
@@ -62,6 +63,7 @@ public class Settings {
     	proximity = pref.getBoolean(Options.PREF_PROXIMITY, false) && haveProximity();
     	boostValue = pref.getInt(Options.PREF_BOOST, 0);
     	disableKeyguardActive = pref.getBoolean(Options.PREF_DISABLE_KEYGUARD, false);
+    	shape = pref.getBoolean(Options.PREF_SHAPE, true);
 	}
 	
 	public void save(SharedPreferences pref) {
@@ -72,6 +74,7 @@ public class Settings {
     	ed.putBoolean(Options.PREF_PROXIMITY, proximity);
     	ed.putBoolean(Options.PREF_DISABLE_KEYGUARD, disableKeyguardActive);
     	ed.putInt(Options.PREF_BOOST, boostValue);
+    	ed.putBoolean(Options.PREF_SHAPE, shape);
     	ed.commit();
 	}
 	
@@ -111,9 +114,22 @@ public class Settings {
     		v = rangeHigh;
 
     	for (short i=0; i<bands; i++) {
-        	Earpiece.log("boost "+i+" to "+v);
+        	
+        	short adj = v;
+        	
+        	if (shape) {
+	    		int hz = eq.getCenterFreq(i)/1000;
+	        	if (hz < 150)
+	        		adj = 0;
+	        	else if (hz < 250)
+	        		adj = (short)(v/2);
+	        	else if (hz > 8000)
+	        		adj = (short)(3*(int)v/4);
+        	}
 
-    		eq.setBandLevel(i, v);
+        	Earpiece.log("boost "+i+" ("+(eq.getCenterFreq(i)/1000)+"hz) to "+adj);        	
+
+        	eq.setBandLevel(i, adj);
     	}
     	
     	eq.setEnabled(v > 0);

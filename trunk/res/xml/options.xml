@@ -13,6 +13,11 @@
     android:defaultValue="false"
     android:key="autoSpeakerPhone"
     />
+<CheckBoxPreference 
+    android:title="Non-uniform boost"
+    android:summary="When boosting, this improves voice audibility and MAY help decrease the danger to the speakers from boosting the sound by boosting mainly mid and high level frequencies.  Normally leave this checked."  
+    android:key="shape0"
+    android:defaultValue="true"/>
 <!-- <CheckBoxPreference 
     android:title="Disable lock"
     android:defaultValue="false"
