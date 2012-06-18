@@ -25,6 +25,7 @@ public class Options extends PreferenceActivity {
 	public static final String PREF_DISABLE_KEYGUARD = "disableKeyguard";
 	public static final String PREF_LAST_VERSION = "lastVersion1";
 	public static final String PREF_WARNED_LAST_VERSION = "warnedLastVersion";
+	public static final String PREF_SHAPE = "shape";
 	
 	@Override
 	public void onCreate(Bundle icicle) {
