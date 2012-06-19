@@ -157,7 +157,10 @@ public class EarpieceService extends Service implements SensorEventListener
 		}
 	}
 	
-	private void updateAutoSpeakerPhone() {		
+	private void updateAutoSpeakerPhone() {
+          if (tm == null)
+             return;
+             
 		if (settings.isAutoSpeakerPhoneActive()) {
 			Earpiece.log("Auto speaker phone mode on");
 			tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
