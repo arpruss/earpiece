@@ -23,4 +23,8 @@
     android:defaultValue="false"
     android:key="disableKeyguard"
     />  -->
+<CheckBoxPreference 
+    android:title="Quiet Epic 4G Touch camera"
+    android:key="quietCamera"
+    android:defaultValue="false"/>
 </PreferenceScreen>

@@ -79,6 +79,8 @@ public class Earpiece extends Activity implements ServiceConnection {
 			versionCode = 0;
 		} 
 		
+		setVolumeControlStream(AudioManager.STREAM_MUSIC); 
+		
 		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
 
