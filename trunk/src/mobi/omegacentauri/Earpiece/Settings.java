@@ -10,6 +10,7 @@ import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.audiofx.Equalizer;
 import android.os.Build;
+import android.telephony.TelephonyManager;
 import android.view.ViewConfiguration;
 
 public class Settings {
@@ -22,6 +23,7 @@ public class Settings {
 	public short rangeLow;
 	public short rangeHigh;
 	public boolean proximity;
+	public boolean quietCamera;
 
 	public Sensor proximitySensor;
 	public AudioManager audioManager;
@@ -64,6 +66,7 @@ public class Settings {
     	boostValue = pref.getInt(Options.PREF_BOOST, 0);
     	disableKeyguardActive = pref.getBoolean(Options.PREF_DISABLE_KEYGUARD, false);
     	shape = pref.getBoolean(Options.PREF_SHAPE, true);
+    	quietCamera = pref.getBoolean(Options.PREF_QUIET_CAMERA, false);
 	}
 	
 	public void save(SharedPreferences pref) {
@@ -75,26 +78,62 @@ public class Settings {
     	ed.putBoolean(Options.PREF_DISABLE_KEYGUARD, disableKeyguardActive);
     	ed.putInt(Options.PREF_BOOST, boostValue);
     	ed.putBoolean(Options.PREF_SHAPE, shape);
+    	ed.putBoolean(Options.PREF_QUIET_CAMERA, quietCamera);
     	ed.commit();
 	}
 	
 	public void setEarpiece() {
+		setEarpiece(earpieceActive);
+	}
+	
+	public void setEarpiece(boolean value) {
+		if (!haveTelephony())
+			return;
+		
 		audioManager.setSpeakerphoneOn(false);
 		
-		if (earpieceActive) {
+		if (value) {
+			Earpiece.log("Earpiece mode on");
 			audioManager.setMode(AudioManager.MODE_IN_CALL);
 			audioManager.setSpeakerphoneOn(false);
-
-//			audioManager.setParameters("noise_suppression=on");
+			Earpiece.log(audioManager.getParameters("mute"));
+			Earpiece.log(audioManager.getParameters("noise_suppression"));
 
 //			audioManager.setRouting(AudioManager.MODE_IN_CALL, AudioManager.ROUTE_EARPIECE,
 //					AudioManager.ROUTE_ALL);
 		}
 		else {
+			Earpiece.log("Earpiece mode off	");
 			audioManager.setMode(AudioManager.MODE_NORMAL);
 //			audioManager.setRouting(AudioManager.MODE_NORMAL, AudioManager.ROUTE_SPEAKER, 
 //					AudioManager.ROUTE_ALL);
 		}		
+	}
+	
+	public void setEqualizer(short v) {
+		if (eq == null)
+			return;
+
+    	for (short i=0; i<bands; i++) {
+        	
+        	short adj = v;
+        	
+        	if (shape && 0 <= v) {
+	    		int hz = eq.getCenterFreq(i)/1000;
+	        	if (hz < 150)
+	        		adj = 0;
+	        	else if (hz < 250)
+	        		adj = (short)(v/2);
+	        	else if (hz > 8000)
+	        		adj = (short)(3*(int)v/4);
+        	}
+
+        	Earpiece.log("boost "+i+" ("+(eq.getCenterFreq(i)/1000)+"hz) to "+adj);        	
+
+        	eq.setBandLevel(i, adj);
+    	}
+    	
+    	eq.setEnabled(v != 0);		
 	}
 	
 	public void setEqualizer() {
@@ -112,27 +151,8 @@ public class Settings {
     	
     	if (v > rangeHigh)
     		v = rangeHigh;
-
-    	for (short i=0; i<bands; i++) {
-        	
-        	short adj = v;
-        	
-        	if (shape) {
-	    		int hz = eq.getCenterFreq(i)/1000;
-	        	if (hz < 150)
-	        		adj = 0;
-	        	else if (hz < 250)
-	        		adj = (short)(v/2);
-	        	else if (hz > 8000)
-	        		adj = (short)(3*(int)v/4);
-        	}
-
-        	Earpiece.log("boost "+i+" ("+(eq.getCenterFreq(i)/1000)+"hz) to "+adj);        	
-
-        	eq.setBandLevel(i, adj);
-    	}
     	
-    	eq.setEnabled(v > 0);
+    	setEqualizer(v);
 	}
 	
 	public void setAll() {
@@ -171,9 +191,14 @@ public class Settings {
 		return haveProximity() && autoSpeakerPhoneActive;
 	}
 	
+	public boolean isQuietCameraActive() {
+		return eq != null && quietCamera;		
+	}
+	
 	public boolean needService() {
 		return isEqualizerActive() || isProximityActive() ||
-			isAutoSpeakerPhoneActive() || isDisableKeyguardActive();
+			isAutoSpeakerPhoneActive() || isDisableKeyguardActive() ||
+			isQuietCameraActive();
 	}
 	
 //    private static String onoff(boolean v) {
@@ -182,14 +207,14 @@ public class Settings {
     
     public boolean somethingOn() {
     	return earpieceActive || isEqualizerActive() || isAutoSpeakerPhoneActive() || 
-    	isDisableKeyguardActive();
+    	isDisableKeyguardActive() || isQuietCameraActive();
     }
     
 	public String describe() {
 		if (! somethingOn())
 			return "Earpiece application is off";
 		
-		String[] list = new String[5];
+		String[] list = new String[6];
 		int count;
 		
 		count = 0;
@@ -203,6 +228,8 @@ public class Settings {
 			list[count++] = "auto speaker";
 		if (isDisableKeyguardActive())
 			list[count++] = "no lock";
+		if (isQuietCameraActive())
+			list[count++] = "quiet camera";
 		
 		String out = "";
 		for (int i=0; i<count; i++) {

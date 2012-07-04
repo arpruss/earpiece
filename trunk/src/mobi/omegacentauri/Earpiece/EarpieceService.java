@@ -1,5 +1,12 @@
 package mobi.omegacentauri.Earpiece;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import android.app.KeyguardManager;
 import android.app.KeyguardManager.KeyguardLock;
 import android.app.Notification;
@@ -11,6 +18,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.AudioManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -20,10 +28,13 @@ import android.os.PowerManager.WakeLock;
 import android.preference.PreferenceManager;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
+import android.util.EventLog;
+import android.util.Log;
 
 public class EarpieceService extends Service implements SensorEventListener   
 {	
 	private final Messenger messenger = new Messenger(new IncomingHandler());
+	private boolean quietedCamera = false;
 	private static final int PROXIMITY_SCREEN_OFF_WAKE_LOCK = 32;
 	private SharedPreferences options;
 	private Settings settings;
@@ -38,6 +49,9 @@ public class EarpieceService extends Service implements SensorEventListener
 	private PhoneStateListener phoneStateListener;
 	private long t0;
 	protected boolean phoneOn = false;
+	private Process logProcess = null;
+	private boolean interruptReader = false;
+	private Thread logThread = null;
 	private static final String PROXIMITY_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.proximity";
 	private static final String GUARD_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.guard";
  	
@@ -114,17 +128,20 @@ public class EarpieceService extends Service implements SensorEventListener
 				void onCallStateChanged(int state, String incomingNumber) {
 					Earpiece.log("phone state:" + state);
 					phoneOn = ( state == TelephonyManager.CALL_STATE_OFFHOOK );
-					closeToPhoneValid = false;
+					closeToPhoneValid = true; // false
+					closeToPhone = false;     // remove?
 					if (phoneOn) {
 						if (proximitySensor == null) {
 							proximitySensor = settings.proximitySensor;
-							settings.sensorManager.registerListener(EarpieceService.this, proximitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+							settings.sensorManager.registerListener(EarpieceService.this, proximitySensor, /*SensorManager.SENSOR_DELAY_NORMAL*/
+									SensorManager.SENSOR_DELAY_UI);
 							Earpiece.log("Registering proximity sensor");
 						}
 					}
 					else {
 						if (proximitySensor != null) {
 							disableProximitySensor();
+							Earpiece.log("Closing proximity sensor");
 						}
 					}
 					updateSpeakerPhone();
@@ -136,6 +153,19 @@ public class EarpieceService extends Service implements SensorEventListener
 		if (options.getBoolean(Options.PREF_DISABLE_KEYGUARD, false)) {
 			enableDisableKeyguard();
 		}
+
+		if (settings.quietCamera) {
+	        Runnable logRunnable = new Runnable(){
+	        	@Override
+	        	public void run() {
+	                interruptReader = false;
+					monitorLog();
+				}};  
+			logThread = new Thread(logRunnable);
+			
+			logThread.start();
+		}
+
 	}
 	
 	private void disableProximitySensor() {
@@ -187,8 +217,28 @@ public class EarpieceService extends Service implements SensorEventListener
 			tm.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
 		}
 		
+		if (logThread != null) {
+			interruptReader = true;
+			try {
+				if (logProcess != null) {
+					Earpiece.log("Destroying service, killing reader");
+					logProcess.destroy();
+				}
+//				logThread = null;
+			}
+			catch (Exception e) {
+			}  
+		}
+		
+		if (quietedCamera) {
+			settings.setEarpiece(false);
+			quietedCamera = false;
+		}
+
+		
 		if(Options.getNotify(options) != Options.NOTIFY_NEVER)
 			stopForeground(true);
+		
 	}
 	
 	@Override
@@ -264,6 +314,96 @@ public class EarpieceService extends Service implements SensorEventListener
 			phoneOn = (tm.getCallState() == TelephonyManager.CALL_STATE_OFFHOOK);
 			Earpiece.log("onSensorChanged, phone = "+tm.getCallState());
 			updateSpeakerPhone();
+		}
+	}
+
+
+	private void monitorLog() {
+		Random x = new Random();
+		BufferedReader logReader;
+		String endBlock = null;
+		String logMarker = "m:"+System.currentTimeMillis()+":"+x.nextLong()+":"+t0;
+
+		for(;;) {
+			logProcess = null;
+
+			String marker = "mobi.omegacentauri.Earpiece:marker:"+System.currentTimeMillis()+":"+x.nextLong()+":";
+			
+			try {
+				Earpiece.log("logcat monitor starting");
+				Log.i("Earpiece", marker);
+				String[] cmd2 = { "logcat" };
+				logProcess = Runtime.getRuntime().exec(cmd2);
+				logReader = new BufferedReader(new InputStreamReader(logProcess.getInputStream()));
+				Earpiece.log("reading");
+
+				String line;
+				while (null != (line = logReader.readLine())) {
+					if (interruptReader)
+						break;
+					
+					if (marker != null) {
+						if (line.contains(marker))
+							marker = null;
+						continue;
+					}
+					else if (endBlock != null && line.contains(endBlock)) {
+						settings.setEqualizer();
+						settings.setEarpiece();
+						endBlock = null;
+						Earpiece.log("Ending block");
+						quietedCamera = false;
+						settings.audioManager.setStreamMute(AudioManager.STREAM_SYSTEM, false);
+					}
+					else if (line.contains("Total-Shot2Shot**StartU") &&
+						! line.contains("Earpiece")) {
+						settings.setEarpiece(true);
+						settings.setEqualizer(settings.rangeLow);
+						endBlock = "Total-Shot2Shot**EndU";
+						quietedCamera = true;
+						Earpiece.log("Starting block");
+					}
+//					else if (line.contains("setStreamMute() stream ")) {
+//						settings.audioManager.setStreamMute(1, true);
+//						settings.audioManager.setStreamMute(3, true);
+//						settings.audioManager.setStreamMute(7, true);
+//						settings.audioManager.setStreamMute(9, true);
+//						settings.audioManager.setStreamMute(10, true);
+//						settings.audioManager.setStreamMute(12, true);
+//						Earpiece.log("moverrode");
+//
+//					}
+//					else if (line.contains("Shot2Shot-TakePicture**StartU")) {
+//						settings.setEarpiece(true);
+//						settings.setEqualizer(settings.rangeLow);
+//						endBlock = "Shot2Shot-TakePicture**EndU";
+//						quietedCamera = true;
+//						Earpiece.log("Starting block");
+//					}
+				}
+
+				logReader.close();
+				logReader = null;
+			}
+			catch(IOException e) {
+				Earpiece.log("logcat: "+e);
+
+				if (logProcess != null)
+					logProcess.destroy();
+			}
+
+            
+			if (interruptReader) {
+				Earpiece.log("reader interrupted");
+			    return;
+			}
+
+			Earpiece.log("logcat monitor died");
+			
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+			}
 		}
 	}
 }
