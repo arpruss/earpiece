@@ -361,25 +361,15 @@ public class EarpieceService extends Service implements SensorEventListener
 						settings.setEqualizer(settings.rangeLow);
 						endBlock = "Total-Shot2Shot**EndU";
 						quietedCamera = true;
-						Earpiece.log("Starting block");
+						Earpiece.log("Starting block[total]");
 					}
-//					else if (line.contains("setStreamMute() stream ")) {
-//						settings.audioManager.setStreamMute(1, true);
-//						settings.audioManager.setStreamMute(3, true);
-//						settings.audioManager.setStreamMute(7, true);
-//						settings.audioManager.setStreamMute(9, true);
-//						settings.audioManager.setStreamMute(10, true);
-//						settings.audioManager.setStreamMute(12, true);
-//						Earpiece.log("moverrode");
-//
-//					}
-//					else if (line.contains("Shot2Shot-TakePicture**StartU")) {
-//						settings.setEarpiece(true);
-//						settings.setEqualizer(settings.rangeLow);
-//						endBlock = "Shot2Shot-TakePicture**EndU";
-//						quietedCamera = true;
-//						Earpiece.log("Starting block");
-//					}
+					else if (!quietedCamera && line.contains("Shot2Shot-Autofocus**StartU")) {
+						settings.setEarpiece(true);
+						settings.setEqualizer(settings.rangeLow);
+						endBlock = "Shot2Shot-Autofocus**EndU";
+						quietedCamera = true;
+						Earpiece.log("Starting block[af]");
+					}
 				}
 
 				logReader.close();
