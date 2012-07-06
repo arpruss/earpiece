@@ -15,7 +15,7 @@
     />
 <CheckBoxPreference 
     android:title="Non-uniform boost"
-    android:summary="When boosting, this improves voice audibility and MAY help decrease the danger to the speakers from boosting the sound by boosting mainly mid and high level frequencies.  Normally leave this checked."  
+    android:summary="Improves boosted voice clarity and MAY help decrease danger to speakers by focusing boost mainly on mid-level frequencies."  
     android:key="shape0"
     android:defaultValue="true"/>
 <!-- <CheckBoxPreference 
