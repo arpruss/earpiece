@@ -23,6 +23,12 @@
     android:defaultValue="false"
     android:key="disableKeyguard"
     />  -->
+<ListPreference
+	android:title="Maximum allowed boost"
+	android:entries="@array/maximum_boost_labels"    	
+	android:entryValues="@array/maximum_boosts"
+	android:key="maximumBoostPerc"
+	android:defaultValue="100"/>
 <CheckBoxPreference 
     android:title="Quiet Epic 4G Touch camera"
     android:key="quietCamera"
