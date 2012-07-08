@@ -24,6 +24,7 @@ public class Settings {
 	public short rangeHigh;
 	public boolean proximity;
 	public boolean quietCamera;
+	public int maximumBoostPercent;
 
 	public Sensor proximitySensor;
 	public AudioManager audioManager;
@@ -67,6 +68,8 @@ public class Settings {
     	disableKeyguardActive = pref.getBoolean(Options.PREF_DISABLE_KEYGUARD, false);
     	shape = pref.getBoolean(Options.PREF_SHAPE, true);
     	quietCamera = pref.getBoolean(Options.PREF_QUIET_CAMERA, false);
+    	maximumBoostPercent = Options.getMaximumBoost(pref);
+    	Earpiece.log("max boost = "+maximumBoostPercent);
 	}
 	
 	public void save(SharedPreferences pref) {
@@ -79,6 +82,7 @@ public class Settings {
     	ed.putInt(Options.PREF_BOOST, boostValue);
     	ed.putBoolean(Options.PREF_SHAPE, shape);
     	ed.putBoolean(Options.PREF_QUIET_CAMERA, quietCamera);
+    	ed.putString(Options.PREF_MAXIMUM_BOOST, ""+maximumBoostPercent);
     	ed.commit();
 	}
 	

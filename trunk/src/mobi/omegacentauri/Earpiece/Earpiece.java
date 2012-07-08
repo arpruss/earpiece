@@ -313,6 +313,13 @@ public class Earpiece extends Activity implements ServiceConnection {
     	super.onResume();
 
     	settings.load(options);
+
+    	boostBar.setMax(SLIDER_MAX * settings.maximumBoostPercent / 100);
+    	if (settings.boostValue > settings.rangeHigh * settings.maximumBoostPercent / 100) {
+    		settings.boostValue = settings.rangeHigh * settings.maximumBoostPercent / 100;
+    		settings.save(options);
+    	}
+
     	settings.setEarpiece();
 
     	setupEqualizer();		
