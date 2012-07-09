@@ -48,7 +48,7 @@ import android.widget.TextView;
 
 public class Earpiece extends Activity implements ServiceConnection {
 	private static boolean DEBUG = true;
-	static final String MARKET = "Appstore";
+	static final String MARKET = "Market";
 	CheckBox earpieceBox;
 	CheckBox proximityBox;
 	CheckBox equalizerBox;
@@ -155,7 +155,7 @@ public class Earpiece extends Activity implements ServiceConnection {
 		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
 
 		settings.boostValue = 0;
-		settings.save(options);
+		settings.saveBoost(options);
 		settings.disableEqualizer();
 		boostBar.setProgress(0);
 		reloadSettings();

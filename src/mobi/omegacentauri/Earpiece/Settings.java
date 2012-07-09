@@ -81,8 +81,14 @@ public class Settings {
     	ed.putBoolean(Options.PREF_DISABLE_KEYGUARD, disableKeyguardActive);
     	ed.putInt(Options.PREF_BOOST, boostValue);
     	ed.putBoolean(Options.PREF_SHAPE, shape);
-    	ed.putBoolean(Options.PREF_QUIET_CAMERA, quietCamera);
+    	//ed.putBoolean(Options.PREF_QUIET_CAMERA, quietCamera);
     	ed.putString(Options.PREF_MAXIMUM_BOOST, ""+maximumBoostPercent);
+    	ed.commit();
+	}
+	
+	public void saveBoost(SharedPreferences pref) {
+    	SharedPreferences.Editor ed = pref.edit();
+    	ed.putInt(Options.PREF_BOOST, boostValue);
     	ed.commit();
 	}
 	

@@ -357,8 +357,9 @@ public class EarpieceService extends Service implements SensorEventListener
 			
 			try {
 				Earpiece.log("logcat monitor starting");
-				Log.i("Earpiece", marker);
-				String[] cmd2 = { "logcat" };
+				Log.i("EarpieceMarker", marker);
+				String[] cmd2 = { "logcat", "I:EarpieceMarker", "AudioPolicyManager:E", 
+						"ShotSingle:I", "AXLOG:E", "CameraEngine:V" };
 				logProcess = Runtime.getRuntime().exec(cmd2);
 				logReader = new BufferedReader(new InputStreamReader(logProcess.getInputStream()));
 				Earpiece.log("reading");
