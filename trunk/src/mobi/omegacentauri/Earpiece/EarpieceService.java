@@ -54,6 +54,20 @@ public class EarpieceService extends Service implements SensorEventListener
 	private Thread logThread = null;
 	private static final String PROXIMITY_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.proximity";
 	private static final String GUARD_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.guard";
+	private Handler unquietCameraHandler = new Handler();
+	private final Runnable unquietCameraRunnable = new Runnable() {
+
+		@Override
+		public void run() {
+			if (quietedCamera) {
+				settings.setEqualizer();
+				settings.setEarpiece();
+				quietedCamera = false;
+				Earpiece.log("unquieting camera...");
+			}			
+		}
+			
+	};
  	
 	public class IncomingHandler extends Handler {
 		public static final int MSG_OFF = 0;
@@ -206,10 +220,15 @@ public class EarpieceService extends Service implements SensorEventListener
 		Earpiece.log("stop service "+t0);
 
 		settings.load(options);
-//		if (settings.isEqualizerActive()) {
-			Earpiece.log("disabling equalizer");
-			settings.disableEqualizer();
-//		}
+
+		if (quietedCamera) {
+			settings.setEarpiece(false);
+			quietedCamera = false;
+			unquietCameraHandler.removeCallbacks(unquietCameraRunnable);
+		}
+		
+		Earpiece.log("disabling equalizer");
+		settings.disableEqualizer();
 		disableProximity();
 		disableDisableKeyguard();
 		disableProximitySensor();
@@ -230,11 +249,6 @@ public class EarpieceService extends Service implements SensorEventListener
 			}  
 		}
 		
-		if (quietedCamera) {
-			settings.setEarpiece(false);
-			quietedCamera = false;
-		}
-
 		
 		if(Options.getNotify(options) != Options.NOTIFY_NEVER)
 			stopForeground(true);
@@ -317,6 +331,18 @@ public class EarpieceService extends Service implements SensorEventListener
 		}
 	}
 
+	private boolean needToQuiet(String line) {
+		if (line.startsWith("E/AudioPolicyManager"))
+			return line.contains("media stream unmute for camera sound (enforce stream)");
+		else if (line.startsWith("I/ShotSingle"))
+			return line.contains("ShotSingle::takePicture start");
+		else if (line.startsWith("E/AXLOG"))
+			return line.contains("Total-Shot2Shot**StartU");
+		else if (line.startsWith("V/CameraEngine"))
+			return line.contains("scheduleAutoFocus");
+		else
+			return false;
+	}
 
 	private void monitorLog() {
 		Random x = new Random();
@@ -347,29 +373,38 @@ public class EarpieceService extends Service implements SensorEventListener
 							marker = null;
 						continue;
 					}
-					else if (endBlock != null && line.contains(endBlock)) {
-						settings.setEqualizer();
-						settings.setEarpiece();
-						endBlock = null;
-						Earpiece.log("Ending block");
-						quietedCamera = false;
-						settings.audioManager.setStreamMute(AudioManager.STREAM_SYSTEM, false);
-					}
-					else if (line.contains("Total-Shot2Shot**StartU") &&
-						! line.contains("Earpiece")) {
+					else if (
+							needToQuiet(line)
+					) {
+						Earpiece.log("quieting camera["+line+"]");
 						settings.setEarpiece(true);
 						settings.setEqualizer(settings.rangeLow);
-						endBlock = "Total-Shot2Shot**EndU";
 						quietedCamera = true;
-						Earpiece.log("Starting block[total]");
+						unquietCameraHandler.removeCallbacks(unquietCameraRunnable);
+						unquietCameraHandler.postDelayed(unquietCameraRunnable, 2000);
 					}
-					else if (!quietedCamera && line.contains("Shot2Shot-Autofocus**StartU")) {
-						settings.setEarpiece(true);
-						settings.setEqualizer(settings.rangeLow);
-						endBlock = "Shot2Shot-Autofocus**EndU";
-						quietedCamera = true;
-						Earpiece.log("Starting block[af]");
-					}
+//					else if (endBlock != null && line.contains(endBlock)) {
+//						settings.setEqualizer();
+//						settings.setEarpiece();
+//						Earpiece.log("Ending block");
+//						quietedCamera = false;
+//						endBlock = null;
+//					}
+//					else if (line.contains("Total-Shot2Shot**StartU") &&
+//						! line.contains("Earpiece")) {
+//						settings.setEarpiece(true);
+//						settings.setEqualizer(settings.rangeLow);
+//						endBlock = "Total-Shot2Shot**EndU";
+//						quietedCamera = true;
+//						Earpiece.log("Starting block[total]");
+//					}
+//					else if (!quietedCamera && line.contains("Shot2Shot-Autofocus**StartU")) {
+//						settings.setEarpiece(true);
+//						settings.setEqualizer(settings.rangeLow);
+//						endBlock = "Shot2Shot-Autofocus**EndU";
+//						quietedCamera = true;
+//						Earpiece.log("Starting block[af]");
+//					}
 				}
 
 				logReader.close();

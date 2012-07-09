@@ -100,8 +100,8 @@ public class Settings {
 			Earpiece.log("Earpiece mode on");
 			audioManager.setMode(AudioManager.MODE_IN_CALL);
 			audioManager.setSpeakerphoneOn(false);
-			Earpiece.log(audioManager.getParameters("mute"));
-			Earpiece.log(audioManager.getParameters("noise_suppression"));
+//			Earpiece.log(audioManager.getParameters("mute"));
+//			Earpiece.log(audioManager.getParameters("noise_suppression"));
 
 //			audioManager.setRouting(AudioManager.MODE_IN_CALL, AudioManager.ROUTE_EARPIECE,
 //					AudioManager.ROUTE_ALL);
@@ -132,10 +132,11 @@ public class Settings {
 	        		adj = (short)(3*(int)v/4);
         	}
 
-        	Earpiece.log("boost "+i+" ("+(eq.getCenterFreq(i)/1000)+"hz) to "+adj);        	
+//        	Earpiece.log("boost "+i+" ("+(eq.getCenterFreq(i)/1000)+"hz) to "+adj);        	
 
         	eq.setBandLevel(i, adj);
     	}
+    	Earpiece.log("boost to "+v);
     	
     	eq.setEnabled(v != 0);		
 	}
