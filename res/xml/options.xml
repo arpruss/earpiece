@@ -30,7 +30,8 @@
 	android:key="maximumBoostPerc"
 	android:defaultValue="100"/>
 <CheckBoxPreference 
-    android:title="Quiet Epic 4G Touch camera"
+    android:title="Quiet camera"
     android:key="quietCamera"
+    android:summary="This decreases the volume of the autofocus beep and camera click on some devices."
     android:defaultValue="false"/>
 </PreferenceScreen>
