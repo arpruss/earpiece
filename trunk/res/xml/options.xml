@@ -32,6 +32,6 @@
 <CheckBoxPreference 
     android:title="Quiet camera"
     android:key="quietCamera"
-    android:summary="This decreases the volume of the autofocus beep and camera click on some devices."
+    android:summary="Decreases the volume of the autofocus beep and camera click on some devices. Please ensure confirmity with your local laws."
     android:defaultValue="false"/>
 </PreferenceScreen>

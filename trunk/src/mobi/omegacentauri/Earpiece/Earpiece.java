@@ -32,6 +32,7 @@ import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.text.Html;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -40,6 +41,7 @@ import android.view.Window;
 import android.view.ViewConfiguration;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.FrameLayout;
 import android.widget.SeekBar;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.LinearLayout;
@@ -48,7 +50,7 @@ import android.widget.TextView;
 
 public class Earpiece extends Activity implements ServiceConnection {
 	private static boolean DEBUG = true;
-	static final String MARKET = "Market";
+	static final String MARKET = "Appstore";
 	CheckBox earpieceBox;
 	CheckBox proximityBox;
 	CheckBox equalizerBox;
@@ -60,6 +62,7 @@ public class Earpiece extends Activity implements ServiceConnection {
 	private Settings settings;
 //	private TextView ad;
 	private int versionCode;
+	private LinearLayout main;
 	
 	static final int NOTIFICATION_ID = 1;
 
@@ -82,8 +85,9 @@ public class Earpiece extends Activity implements ServiceConnection {
 		setVolumeControlStream(AudioManager.STREAM_MUSIC); 
 		
 		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        setContentView(R.layout.main);
-
+		main = (LinearLayout)getLayoutInflater().inflate(R.layout.main, null);
+		setContentView(main);
+		
 		options = PreferenceManager.getDefaultSharedPreferences(this);
 		settings = new Settings(this);
 		
@@ -307,10 +311,38 @@ public class Earpiece extends Activity implements ServiceConnection {
     	return ((value-min)*SLIDER_MAX + (max-min)/2) / (max-min);
     }
 
+    void resize() {
+    	LinearLayout ll = main;
+    	FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams)ll.getLayoutParams();
+
+    	int h = getWindowManager().getDefaultDisplay().getHeight();
+    	int w = getWindowManager().getDefaultDisplay().getWidth();
+    	
+    	int min = h<w ? h : w;
+    	
+    	int desiredMin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 256, getResources().getDisplayMetrics());
+    	lp.width = min * 4 / 5;
+    	if (lp.width < desiredMin) {
+    		lp.width = desiredMin;
+    		if (w < desiredMin)
+    			 lp.width = w;
+    	}
+    	
+//    	if (w>h) {
+//    		lp.setMargins((w-h)/2,0,(w-h)/2,0);
+//    	}
+//    	else {
+//    		lp.setMargins(0,0,0,0);
+//    	}
+		ll.setLayoutParams(lp);
+    }
+    
     
     @Override
     public void onResume() {
     	super.onResume();
+    	
+    	resize();
 
     	settings.load(options);
 

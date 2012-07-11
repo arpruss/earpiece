@@ -77,7 +77,7 @@
 	      android:layout_weight="1"
 	      android:layout_height="wrap_content"
 	      android:textSize="13sp"
-          android:text="ALL USE IS AT YOUR OWN RISK. Especially be careful of boosts above 40%." 
+          android:text="ALL USE IS AT YOUR OWN RISK. Be extra careful of boosts above 40%." 
         />
     	  <Button 
     	      android:id="@+id/more"
