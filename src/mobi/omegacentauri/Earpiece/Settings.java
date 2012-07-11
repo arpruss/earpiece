@@ -55,6 +55,9 @@ public class Settings {
 			catch (UnsupportedOperationException e) {
 				eq = null;
 			}
+			catch (IllegalArgumentException e) {
+				eq = null;
+			}
 		}
 	}
 	

@@ -110,9 +110,9 @@ public class EarpieceService extends Service implements SensorEventListener
 			tm = null;
 		
 
-		if (Options.getNotify(options) != Options.NOTIFY_NEVER) {
+//		if (Options.getNotify(options) != Options.NOTIFY_NEVER) {
 	        Notification n = new Notification(
-					R.drawable.equalizer,
+					Options.getNotify(options) != Options.NOTIFY_NEVER ? R.drawable.equalizer : 0,
 					"Earpiece", 
 					System.currentTimeMillis());
 			Intent i = new Intent(this, Earpiece.class);
@@ -121,12 +121,12 @@ public class EarpieceService extends Service implements SensorEventListener
 			n.setLatestEventInfo(this, "Earpiece", 
 					settings.describe(), 
 					PendingIntent.getActivity(this, 0, i, 0));
-			Earpiece.log("notify from service "+n.toString());
+//			Earpiece.log("notify from service "+n.toString());
 	
 			startForeground(Earpiece.NOTIFICATION_ID, n);
-		}
-		else {			
-		}
+//		}
+//		else {			
+//		}
 		
 		if (settings.isEqualizerActive())
 			settings.setEqualizer();
@@ -202,8 +202,8 @@ public class EarpieceService extends Service implements SensorEventListener
 	}
 	
 	private void updateAutoSpeakerPhone() {
-          if (tm == null)
-             return;
+		if (tm == null)
+			return;
              
 		if (settings.isAutoSpeakerPhoneActive()) {
 			Earpiece.log("Auto speaker phone mode on");
