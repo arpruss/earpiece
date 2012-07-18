@@ -33,8 +33,9 @@ public class Settings {
 	private Equalizer eq;
 	private Context context;
 	private boolean shape = true;
+	private boolean released = true;
 
-	public Settings(Context context) {
+	public Settings(Context context, boolean activeEqualizer) {
 		this.context = context;
 		audioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
 		sensorManager = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
@@ -46,11 +47,19 @@ public class Settings {
 		
 		if (9 <= Build.VERSION.SDK_INT) {
 			try {
-		        eq = new Equalizer(87654321, 0);
+		        eq = new Equalizer(activeEqualizer ? 87654323 : Integer.MIN_VALUE, 0);
 				bands = eq.getNumberOfBands();
 				
 				rangeLow = eq.getBandLevelRange()[0];
 				rangeHigh = eq.getBandLevelRange()[1];
+				
+				if (!activeEqualizer) {
+					eq.release();
+					released = true;
+				}
+				else {
+					released = false;
+				}
 			}
 			catch (UnsupportedOperationException e) {
 				eq = null;
@@ -68,6 +77,9 @@ public class Settings {
     	   && haveProximity(); 
     	proximity = pref.getBoolean(Options.PREF_PROXIMITY, false) && haveProximity();
     	boostValue = pref.getInt(Options.PREF_BOOST, 0);
+    	int maxBoost = Options.getMaximumBoost(pref) * rangeHigh / 100;
+    	if (boostValue > maxBoost)
+    		boostValue = maxBoost;
     	disableKeyguardActive = pref.getBoolean(Options.PREF_DISABLE_KEYGUARD, false);
     	shape = pref.getBoolean(Options.PREF_SHAPE, true);
     	quietCamera = pref.getBoolean(Options.PREF_QUIET_CAMERA, false);
@@ -143,7 +155,12 @@ public class Settings {
 
 //        	Earpiece.log("boost "+i+" ("+(eq.getCenterFreq(i)/1000)+"hz) to "+adj);        	
 
-        	eq.setBandLevel(i, adj);
+        	try {
+        		eq.setBandLevel(i, adj);
+        	}
+        	catch(Exception exc) {
+        		Earpiece.log("Error "+exc);
+        	}
     	}
     	Earpiece.log("boost to "+v);
     	
@@ -179,9 +196,19 @@ public class Settings {
 	}
 
 	public void disableEqualizer() {
-		if (eq != null) {
+		if (eq != null && !released) {
 			Earpiece.log("Closing equalizer");
 			eq.setEnabled(false);
+		}
+	}
+	
+	public void destroyEqualizer() {
+		disableEqualizer();
+		if (eq != null) {
+			Earpiece.log("Destroying equalizer");
+			eq.release();
+			released = true;
+			eq = null;
 		}
 	}
 	

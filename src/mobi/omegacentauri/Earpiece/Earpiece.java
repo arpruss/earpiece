@@ -50,7 +50,7 @@ import android.widget.TextView;
 
 public class Earpiece extends Activity implements ServiceConnection {
 	private static boolean DEBUG = true;
-	static final String MARKET = "Appstore";
+	static final String MARKET = "Market";
 	CheckBox earpieceBox;
 	CheckBox proximityBox;
 	CheckBox equalizerBox;
@@ -89,7 +89,7 @@ public class Earpiece extends Activity implements ServiceConnection {
 		setContentView(main);
 		
 		options = PreferenceManager.getDefaultSharedPreferences(this);
-		settings = new Settings(this);
+		settings = new Settings(this, false);
 		
     	boostBar = (SeekBar)findViewById(R.id.boost);
         earpieceBox = (CheckBox)findViewById(R.id.earpiece);

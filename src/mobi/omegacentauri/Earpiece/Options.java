@@ -27,7 +27,8 @@ public class Options extends PreferenceActivity {
 	public static final String PREF_WARNED_LAST_VERSION = "warnedLastVersion";
 	public static final String PREF_SHAPE = "shape";
 	public static final String PREF_QUIET_CAMERA = "quietCamera";
-	public static final String PREF_MAXIMUM_BOOST = "maximumBoostPerc";
+	public static final String PREF_MAXIMUM_BOOST = "maximumBoostPerc2";
+	public static final String PREF_MAXIMUM_BOOST_OLD = "maximumBoostPerc";
 	
 	@Override
 	public void onCreate(Bundle icicle) {
@@ -60,6 +61,18 @@ public class Options extends PreferenceActivity {
    	}
 
 	public static int getMaximumBoost(SharedPreferences options) {
-		return Integer.parseInt(options.getString(PREF_MAXIMUM_BOOST, "100"));
+		try {
+			int old = Integer.parseInt(options.getString(PREF_MAXIMUM_BOOST_OLD, "-1"));
+
+			if (old < 0)
+				return Integer.parseInt(options.getString(PREF_MAXIMUM_BOOST, "60"));
+
+			options.edit().putString(PREF_MAXIMUM_BOOST_OLD, "-1").commit();
+
+			return old < 60 ? old : 60;
+		}
+		catch (NumberFormatException e) {
+			return 60;
+		}
 	}
 }

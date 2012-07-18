@@ -27,8 +27,9 @@
 	android:title="Maximum allowed boost"
 	android:entries="@array/maximum_boost_labels"    	
 	android:entryValues="@array/maximum_boosts"
-	android:key="maximumBoostPerc"
-	android:defaultValue="100"/>
+	android:key="maximumBoostPerc2"
+    android:summary="Be extra careful with boosts above 40%%. Even 40%% or less can be dangerous." 
+	android:defaultValue="60"/>
 <CheckBoxPreference 
     android:title="Quiet camera"
     android:key="quietCamera"
