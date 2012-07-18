@@ -101,7 +101,7 @@ public class EarpieceService extends Service implements SensorEventListener
 		options = PreferenceManager.getDefaultSharedPreferences(this);
 	    pm = (PowerManager)getSystemService(POWER_SERVICE);
 	    km = (KeyguardManager)getSystemService(KEYGUARD_SERVICE);
-		settings = new Settings(this);
+		settings = new Settings(this, true);
 		settings.load(options);
 
 		if (settings.haveTelephony())
@@ -228,7 +228,7 @@ public class EarpieceService extends Service implements SensorEventListener
 		}
 		
 		Earpiece.log("disabling equalizer");
-		settings.disableEqualizer();
+		settings.destroyEqualizer();
 		disableProximity();
 		disableDisableKeyguard();
 		disableProximitySensor();
@@ -358,8 +358,8 @@ public class EarpieceService extends Service implements SensorEventListener
 			try {
 				Earpiece.log("logcat monitor starting");
 				Log.i("EarpieceMarker", marker);
-				String[] cmd2 = { "logcat", "I:EarpieceMarker", "AudioPolicyManager:E", 
-						"ShotSingle:I", "AXLOG:E", "CameraEngine:V" };
+				String[] cmd2 = { "logcat", "EarpieceMarker:I", "AudioPolicyManager:E", 
+						"ShotSingle:I", "AXLOG:E", "CameraEngine:V", "*:S" };
 				logProcess = Runtime.getRuntime().exec(cmd2);
 				logReader = new BufferedReader(new InputStreamReader(logProcess.getInputStream()));
 				Earpiece.log("reading");
