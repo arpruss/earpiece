@@ -82,7 +82,21 @@ public class Earpiece extends Activity implements ServiceConnection {
 			versionCode = 0;
 		} 
 		
-		setVolumeControlStream(AudioManager.STREAM_MUSIC); 
+		setVolumeControlStream(AudioManager.STREAM_MUSIC);
+		
+//		Equalizer e2 = new Equalizer(Integer.MIN_VALUE, 79) ;
+//		Log.v("CurrentPreset", "e2:"+e2.getProperties()+" "+e2.hasControl());
+//		Equalizer e = new Equalizer(Integer.MAX_VALUE, 79) ;
+//		Log.v("CurrentPreset", "e:"+e.getProperties()+" "+e.hasControl());
+//		Log.v("CurrentPreset", "e2:"+e2.getProperties()+" "+e2.hasControl());
+//		e.usePreset((short)0);
+//		e.setBandLevel((short)0, (short)-1500) ;
+//		e.setBandLevel((short)1, (short)-1500);
+//		e.setBandLevel((short)2, (short)-1500);
+//		e.setBandLevel((short)3, (short)-1500);
+//		e.setBandLevel((short)4, (short)-1500);
+//		e.setEnabled(true);
+//		Log.v("CurrentPreset", ""+e.getProperties());
 		
 		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
 		main = (LinearLayout)getLayoutInflater().inflate(R.layout.main, null);
