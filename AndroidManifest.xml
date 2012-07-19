@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="mobi.omegacentauri.Earpiece"
-    android:versionCode="24"
-    android:versionName="1.07" >
+    android:versionCode="25"
+    android:versionName="1.07.1" >
 
     <uses-sdk android:minSdkVersion="3" />
     <uses-permission android:name="android.permission.READ_LOGS"/>
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
-	 <uses-permission android:name="android.permission.WAKE_LOCK" />    
-	 <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
-	 <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
 	 	 
     <application
         android:icon="@drawable/icon"

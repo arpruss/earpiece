@@ -28,9 +28,9 @@
 	android:entries="@array/maximum_boost_labels"    	
 	android:entryValues="@array/maximum_boosts"
 	android:key="maximumBoostPerc2"
-    android:summary="Be extra careful with boosts above 40%%. Even 40%% or less can be dangerous." 
+    android:summary="Be extra careful with boosts above 40. Even 40 or less can be dangerous."
 	android:defaultValue="60"/>
-<CheckBoxPreference 
+<CheckBoxPreference
     android:title="Quiet camera"
     android:key="quietCamera"
     android:summary="Decreases the volume of the autofocus beep and camera click on some devices. Please ensure confirmity with your local laws."
