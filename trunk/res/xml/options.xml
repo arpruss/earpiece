@@ -33,6 +33,11 @@
 <CheckBoxPreference
     android:title="Quiet camera"
     android:key="quietCamera"
-    android:summary="Decreases the volume of the autofocus beep and camera click on some devices. Please ensure confirmity with your local laws."
+    android:summary="Come back here to turn this off before upgrading or deinstalling, or you'll have an orphan process until you reboot." 
+    android:defaultValue="false"/>
+<CheckBoxPreference
+    android:title="Notify LED when off"
+    android:key="notifyLightOnlyWhenOff"
+    android:summary="Make the notification LED flash only function when device is off."
     android:defaultValue="false"/>
 </PreferenceScreen>

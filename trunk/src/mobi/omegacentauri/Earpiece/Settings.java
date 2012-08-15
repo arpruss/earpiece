@@ -34,6 +34,7 @@ public class Settings {
 	private Context context;
 	private boolean shape = true;
 	private boolean released = true;
+	public boolean notifyLightOnlyWhenOff;
 
 	public Settings(Context context, boolean activeEqualizer) {
 		this.context = context;
@@ -71,7 +72,8 @@ public class Settings {
 	}
 	
 	public void load(SharedPreferences pref) {
-    	equalizerActive = pref.getBoolean(Options.PREF_EQUALIZER_ACTIVE, false);
+		notifyLightOnlyWhenOff = pref.getBoolean(Options.PREF_NOTIFY_LIGHT_ONLY_WHEN_OFF, false);
+		equalizerActive = pref.getBoolean(Options.PREF_EQUALIZER_ACTIVE, false);
     	earpieceActive = pref.getBoolean(Options.PREF_EARPIECE_ACTIVE, false);
     	autoSpeakerPhoneActive = pref.getBoolean(Options.PREF_AUTO_SPEAKER_PHONE, false)
     	   && haveProximity(); 
@@ -96,6 +98,7 @@ public class Settings {
     	ed.putBoolean(Options.PREF_DISABLE_KEYGUARD, disableKeyguardActive);
     	ed.putInt(Options.PREF_BOOST, boostValue);
     	ed.putBoolean(Options.PREF_SHAPE, shape);
+    	ed.putBoolean(Options.PREF_NOTIFY_LIGHT_ONLY_WHEN_OFF, notifyLightOnlyWhenOff);
     	//ed.putBoolean(Options.PREF_QUIET_CAMERA, quietCamera);
     	ed.putString(Options.PREF_MAXIMUM_BOOST, ""+maximumBoostPercent);
     	ed.commit();
@@ -204,7 +207,7 @@ public class Settings {
 	
 	public void destroyEqualizer() {
 		disableEqualizer();
-		if (eq != null) {
+		if (eq != null && !released) {
 			Earpiece.log("Destroying equalizer");
 			eq.release();
 			released = true;
@@ -238,6 +241,7 @@ public class Settings {
 	
 	public boolean needService() {
 		return isEqualizerActive() || isProximityActive() ||
+			notifyLightOnlyWhenOff ||
 			isAutoSpeakerPhoneActive() || isDisableKeyguardActive() ||
 			isQuietCameraActive();
 	}
@@ -247,7 +251,7 @@ public class Settings {
 //    }
     
     public boolean somethingOn() {
-    	return earpieceActive || isEqualizerActive() || isAutoSpeakerPhoneActive() || 
+    	return earpieceActive || notifyLightOnlyWhenOff || isEqualizerActive() || isAutoSpeakerPhoneActive() || 
     	isDisableKeyguardActive() || isQuietCameraActive();
     }
     
@@ -255,7 +259,7 @@ public class Settings {
 		if (! somethingOn())
 			return "Earpiece application is off";
 		
-		String[] list = new String[6];
+		String[] list = new String[7];
 		int count;
 		
 		count = 0;
@@ -271,6 +275,8 @@ public class Settings {
 			list[count++] = "no lock";
 		if (isQuietCameraActive())
 			list[count++] = "quiet camera";
+		if (notifyLightOnlyWhenOff)
+			list[count++] = "notify LED";
 		
 		String out = "";
 		for (int i=0; i<count; i++) {
@@ -295,5 +301,9 @@ public class Settings {
 			return true;
 		return ViewConfiguration.get(this.context).hasPermanentMenuKey();
 		
+	}
+	
+	public boolean needScreenOnOffReceiver() {
+		return notifyLightOnlyWhenOff;
 	}
 }
