@@ -29,6 +29,7 @@ public class Options extends PreferenceActivity {
 	public static final String PREF_QUIET_CAMERA = "quietCamera";
 	public static final String PREF_MAXIMUM_BOOST = "maximumBoostPerc2";
 	public static final String PREF_MAXIMUM_BOOST_OLD = "maximumBoostPerc";
+	public static final String PREF_NOTIFY_LIGHT_ONLY_WHEN_OFF = "notifyLightOnlyWhenOff";
 	
 	@Override
 	public void onCreate(Bundle icicle) {

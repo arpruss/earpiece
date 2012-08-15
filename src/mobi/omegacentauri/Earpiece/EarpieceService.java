@@ -7,18 +7,26 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import mobi.omegacentauri.Earpiece.EarpieceService.ScreenOnOffReceiver;
+
+import android.annotation.SuppressLint;
 import android.app.KeyguardManager;
 import android.app.KeyguardManager.KeyguardLock;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -30,6 +38,8 @@ import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.EventLog;
 import android.util.Log;
+import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 
 public class EarpieceService extends Service implements SensorEventListener   
 {	
@@ -55,8 +65,10 @@ public class EarpieceService extends Service implements SensorEventListener
 	private static final String PROXIMITY_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.proximity";
 	private static final String GUARD_TAG = "mobi.omegacentauri.Earpiece.EarpieceService.guard";
 	private Handler unquietCameraHandler = new Handler();
-	private final Runnable unquietCameraRunnable = new Runnable() {
+	private ScreenOnOffReceiver screenOnOffReceiver;	
+	
 
+	private final Runnable unquietCameraRunnable = new Runnable() {
 		@Override
 		public void run() {
 			if (quietedCamera) {
@@ -69,6 +81,7 @@ public class EarpieceService extends Service implements SensorEventListener
 			
 	};
  	
+
 	public class IncomingHandler extends Handler {
 		public static final int MSG_OFF = 0;
 		public static final int MSG_ON = 1;
@@ -94,6 +107,7 @@ public class EarpieceService extends Service implements SensorEventListener
 		return messenger.getBinder();
 	}
 	
+	@SuppressLint("NewApi")
 	@Override
 	public void onCreate() {
 		t0 = System.currentTimeMillis();
@@ -103,6 +117,15 @@ public class EarpieceService extends Service implements SensorEventListener
 	    km = (KeyguardManager)getSystemService(KEYGUARD_SERVICE);
 		settings = new Settings(this, true);
 		settings.load(options);
+		if (settings.needScreenOnOffReceiver()) {
+			screenOnOffReceiver = new ScreenOnOffReceiver();
+			IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
+			filter.addAction(Intent.ACTION_SCREEN_OFF);
+			registerReceiver(screenOnOffReceiver, filter);
+		}
+		else {
+			screenOnOffReceiver = null;
+		}
 
 		if (settings.haveTelephony())
 	    	tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
@@ -123,7 +146,8 @@ public class EarpieceService extends Service implements SensorEventListener
 					PendingIntent.getActivity(this, 0, i, 0));
 //			Earpiece.log("notify from service "+n.toString());
 	
-			startForeground(Earpiece.NOTIFICATION_ID, n);
+			if (Build.VERSION.SDK_INT >= 5)
+				startForeground(Earpiece.NOTIFICATION_ID, n);
 //		}
 //		else {			
 //		}
@@ -179,7 +203,6 @@ public class EarpieceService extends Service implements SensorEventListener
 			
 			logThread.start();
 		}
-
 	}
 	
 	private void disableProximitySensor() {
@@ -215,11 +238,20 @@ public class EarpieceService extends Service implements SensorEventListener
 		}
 	}
 	
+	@SuppressLint("NewApi")
 	@Override
 	public void onDestroy() {
 		Earpiece.log("stop service "+t0);
+		super.onDestroy();
 
 		settings.load(options);
+		
+		if (screenOnOffReceiver != null) {
+			unregisterReceiver(screenOnOffReceiver);
+			screenOnOffReceiver = null;
+			if (settings.notifyLightOnlyWhenOff)
+				setNotificationLight(true);
+		}
 
 		if (quietedCamera) {
 			settings.setEarpiece(false);
@@ -250,11 +282,17 @@ public class EarpieceService extends Service implements SensorEventListener
 		}
 		
 		
-		if(Options.getNotify(options) != Options.NOTIFY_NEVER)
+//		if(Options.getNotify(options) != Options.NOTIFY_NEVER)
+		if (Build.VERSION.SDK_INT >= 5)
 			stopForeground(true);
 		
 	}
 	
+	private void setNotificationLight(boolean b) {
+		android.provider.Settings.System.putInt(getContentResolver(), 
+				"notification_light_pulse", b ? 1 : 0);
+	}
+
 	@Override
 	public void onStart(Intent intent, int flags) {
 	}
@@ -349,6 +387,18 @@ public class EarpieceService extends Service implements SensorEventListener
 		BufferedReader logReader;
 		String endBlock = null;
 		String logMarker = "m:"+System.currentTimeMillis()+":"+x.nextLong()+":"+t0;
+		
+		Log.v("hook","set hook");
+		  Runtime.getRuntime().addShutdownHook( 
+	                new Thread(
+	                        new Runnable() {
+	                                public void run() {
+	                                        Log.v("hook", "shutDownHook");
+	                                }       
+	                        }
+	                )
+	        );
+
 
 		for(;;) {
 			logProcess = null;
@@ -358,8 +408,15 @@ public class EarpieceService extends Service implements SensorEventListener
 			try {
 				Earpiece.log("logcat monitor starting");
 				Log.i("EarpieceMarker", marker);
-				String[] cmd2 = { "logcat", "EarpieceMarker:I", "AudioPolicyManager:E", 
+				String[] cmd2;
+				if (Build.VERSION.SDK_INT >= 16) {
+					 cmd2 = new String[] { "su", "-c", "logcat", "-b", "main", "EarpieceMarker:I", "AudioPolicyManager:E", 
+								"ShotSingle:I", "AXLOG:E", "CameraEngine:V", "*:S" };
+				}
+				else {
+				 cmd2 = new String[] { "logcat", "-b", "main", "EarpieceMarker:I", "AudioPolicyManager:E", 
 						"ShotSingle:I", "AXLOG:E", "CameraEngine:V", "*:S" };
+				}
 				logProcess = Runtime.getRuntime().exec(cmd2);
 				logReader = new BufferedReader(new InputStreamReader(logProcess.getInputStream()));
 				Earpiece.log("reading");
@@ -377,7 +434,6 @@ public class EarpieceService extends Service implements SensorEventListener
 					else if (
 							needToQuiet(line)
 					) {
-						Earpiece.log("quieting camera["+line+"]");
 						settings.setEarpiece(true);
 						settings.setEqualizer(settings.rangeLow);
 						quietedCamera = true;
@@ -429,6 +485,28 @@ public class EarpieceService extends Service implements SensorEventListener
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
+			}
+		}
+	}
+
+
+	class ScreenOnOffReceiver extends BroadcastReceiver {
+		public ScreenOnOffReceiver() {
+			super();
+		}
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (intent.getAction().equals(Intent.ACTION_SCREEN_ON))
+				handleScreen(context,true);
+			else if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF))
+				handleScreen(context,false);
+		}
+		
+		void handleScreen(Context context, boolean on) {
+			if (settings.notifyLightOnlyWhenOff) {
+				Earpiece.log("setitng notify light status "+on);
+				setNotificationLight(!on);
 			}
 		}
 	}
