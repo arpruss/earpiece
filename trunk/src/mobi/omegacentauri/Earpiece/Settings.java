@@ -142,6 +142,13 @@ public class Settings {
 		if (eq == null)
 			return;
 
+    	eq.setEnabled(v != 0);		
+
+    	if (v == 0) {
+        	Earpiece.log("no boost");
+    		return;
+    	}
+    	
     	for (short i=0; i<bands; i++) {
         	
         	short adj = v;
@@ -165,9 +172,7 @@ public class Settings {
         		Earpiece.log("Error "+exc);
         	}
     	}
-    	Earpiece.log("boost to "+v);
     	
-    	eq.setEnabled(v != 0);		
 	}
 	
 	public void setEqualizer() {
