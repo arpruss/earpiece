@@ -2,6 +2,7 @@ package mobi.omegacentauri.Earpiece;
 
 import java.util.List;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -10,6 +11,7 @@ import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.audiofx.Equalizer;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.telephony.TelephonyManager;
 import android.view.ViewConfiguration;
 
@@ -35,7 +37,9 @@ public class Settings {
 	private boolean shape = true;
 	private boolean released = true;
 	public boolean notifyLightOnlyWhenOff;
+	private boolean legacy;
 
+	@SuppressLint("NewApi")
 	public Settings(Context context, boolean activeEqualizer) {
 		this.context = context;
 		audioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
@@ -46,7 +50,8 @@ public class Settings {
 		
 		eq = null;
 		
-		if (9 <= Build.VERSION.SDK_INT) {
+		if (9 <= Build.VERSION.SDK_INT && 
+				! PreferenceManager.getDefaultSharedPreferences(context).getBoolean(Options.PREF_REMOVE_BOOST, false)) {
 			try {
 		        eq = new Equalizer(activeEqualizer ? 87654323 : Integer.MIN_VALUE, 0);
 				bands = eq.getNumberOfBands();
@@ -86,6 +91,7 @@ public class Settings {
     	shape = pref.getBoolean(Options.PREF_SHAPE, true);
     	quietCamera = pref.getBoolean(Options.PREF_QUIET_CAMERA, false);
     	maximumBoostPercent = Options.getMaximumBoost(pref);
+    	legacy = pref.getBoolean(Options.PREF_LEGACY, false);
     	Earpiece.log("max boost = "+maximumBoostPercent);
 	}
 	
@@ -122,7 +128,7 @@ public class Settings {
 		
 		if (value) {
 			Earpiece.log("Earpiece mode on");
-			audioManager.setMode(AudioManager.MODE_IN_CALL);
+			audioManager.setMode(legacy ? AudioManager.MODE_IN_CALL : AudioManager.MODE_IN_COMMUNICATION);
 			audioManager.setSpeakerphoneOn(false);
 //			Earpiece.log(audioManager.getParameters("mute"));
 //			Earpiece.log(audioManager.getParameters("noise_suppression"));
@@ -133,11 +139,12 @@ public class Settings {
 		else {
 			Earpiece.log("Earpiece mode off	");
 			audioManager.setMode(AudioManager.MODE_NORMAL);
-//			audioManager.setRouting(AudioManager.MODE_NORMAL, AudioManager.ROUTE_SPEAKER, 
-//					AudioManager.ROUTE_ALL);
+			audioManager.setRouting(AudioManager.MODE_NORMAL, AudioManager.ROUTE_SPEAKER, 
+					AudioManager.ROUTE_ALL);
 		}		
 	}
 	
+	@SuppressLint("NewApi")
 	public void setEqualizer(short v) {
 		if (eq == null)
 			return;
@@ -301,6 +308,7 @@ public class Settings {
 		return Build.MODEL.equalsIgnoreCase("Kindle Fire");		
 	}
 	
+	@SuppressLint("NewApi")
 	public boolean hasMenuKey() {
 		if (isKindle() || Build.VERSION.SDK_INT < 14)
 			return true;

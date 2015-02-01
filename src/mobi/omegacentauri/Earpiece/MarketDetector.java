@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Build.VERSION;
 
 public class MarketDetector {
 	public static final int MARKET = 0;
@@ -21,9 +22,13 @@ public class MarketDetector {
 	}
 	
 	public static int detect(Context c) {
+		if (VERSION.SDK_INT < 5)
+			return APPSTORE; // just to be safe
+
 		PackageManager pm = c.getPackageManager();
 				
 		String installer = pm.getInstallerPackageName(c.getPackageName());
+		
 		
 		if (installer != null && installer.equals("com.android.vending")) 
 			return MARKET;

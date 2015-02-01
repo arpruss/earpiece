@@ -14,6 +14,18 @@
     android:key="autoSpeakerPhone"
     />
 <CheckBoxPreference 
+    android:title="Legacy mode"
+    android:summary="Earpiece mode may work better with this on some older devices."
+    android:defaultValue="false"
+    android:key="legacy"
+    />
+<CheckBoxPreference
+    android:title="Remove boost option"
+    android:summary="The boost option won't work on typical Android 4.2.1+ devices, so you might as well remove it.  Changing this option requires restarting Earpiece."
+    android:defaultValue="false"
+    android:key="removeBoost"
+    />
+<CheckBoxPreference 
     android:title="Non-uniform boost"
     android:summary="Improves boosted voice clarity and MAY help decrease danger to speakers by focusing boost mainly on mid-level frequencies."  
     android:key="shape0"

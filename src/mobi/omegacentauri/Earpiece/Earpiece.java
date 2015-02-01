@@ -83,6 +83,8 @@ public class Earpiece extends Activity implements ServiceConnection {
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
 		
 		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+		if (Build.VERSION.SDK_INT>=11) setFinishOnTouchOutside(true);
+
 		main = (LinearLayout)getLayoutInflater().inflate(R.layout.main, null);
 		setContentView(main);
 		
@@ -333,10 +335,26 @@ public class Earpiece extends Activity implements ServiceConnection {
     @Override
     public void onResume() {
     	super.onResume();
+    	log("onResume");
     	
     	resize();
 
     	settings.load(options);
+    	
+    	if (options.getBoolean(Options.PREF_REMOVE_BOOST, false)) {
+    		log("no boost");
+    		settings.boostValue = 0;
+    		settings.saveBoost(options);
+    		settings.disableEqualizer();
+    		boostBar.setVisibility(View.GONE);
+    		equalizerBox.setVisibility(View.GONE);
+			updateEqualizerDisplay();
+			updateService();
+    	}
+    	else {
+			updateEqualizerDisplay();
+			updateService();
+    	}
 
     	boostBar.setMax(SLIDER_MAX * settings.maximumBoostPercent / 100);
     	if (settings.boostValue > settings.rangeHigh * settings.maximumBoostPercent / 100) {
@@ -410,7 +428,10 @@ public class Earpiece extends Activity implements ServiceConnection {
     	
     	if (messenger != null) {
 			log("unbind");
-			unbindService(this);
+			try {
+				unbindService(this);
+			} catch (Exception e) {
+			}
 			messenger = null;
 		}
 

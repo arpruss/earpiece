@@ -3,6 +3,8 @@ package mobi.omegacentauri.Earpiece;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,6 +28,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -491,6 +494,8 @@ public class EarpieceService extends Service implements SensorEventListener
 
 
 	class ScreenOnOffReceiver extends BroadcastReceiver {
+//		KeyguardLock kg = km.newKeyguardLock("EarpieceNoKeyguardHack");
+		
 		public ScreenOnOffReceiver() {
 			super();
 		}
@@ -505,9 +510,99 @@ public class EarpieceService extends Service implements SensorEventListener
 		
 		void handleScreen(Context context, boolean on) {
 			if (settings.notifyLightOnlyWhenOff) {
-				Earpiece.log("setitng notify light status "+on);
-				setNotificationLight(!on);
+				Earpiece.log("setting notify light status "+on);
+				setNotificationLight(!on);				
 			}
+//			kg.disableKeyguard();
 		}
 	}
+
+
+//	public class IWindowManagerWrapper {
+//		private Object iWindowManager;
+//		private Method getAnimationScale;
+//		private Method setAnimationScale;
+//		private Method disableKeyguard;
+//		private Class cIWindowManager;
+//		
+//		public IWindowManagerWrapper() {
+//			try {
+//				Class cServiceManager = Class.forName("android.os.ServiceManager");
+//				Method ServiceManager_getService;
+//				ServiceManager_getService = cServiceManager.getMethod("getService", 
+//						new Class[] { String.class });
+//				IBinder windowService = (IBinder) ServiceManager_getService.invoke(null, "window");
+//				Class cIWindowManager_Stub = Class.forName("android.view.IWindowManager$Stub");
+//				Method IWindowManager_Stub_asInterface =
+//					cIWindowManager_Stub.getMethod("asInterface", IBinder.class);
+//
+//				iWindowManager = IWindowManager_Stub_asInterface.invoke(null, windowService);
+//				cIWindowManager = Class.forName("android.view.IWindowManager");
+//				
+//				getAnimationScale = cIWindowManager.getMethod("getAnimationScale", 
+//						Integer.TYPE);
+//				setAnimationScale = cIWindowManager.getMethod("setAnimationScale", 
+//						Integer.TYPE, Float.TYPE);
+//				disableKeyguard = cIWindowManager.getMethod("disableKeyguard", 
+//						IBinder.class, String.class);
+//				
+//				Earpiece.log("got IWindowManager");
+//				
+//				
+//			} catch (InvocationTargetException e) {
+//				Log.e("IWindowManagerWrapper", ""+e.getCause());
+//				iWindowManager = null;
+//			}
+//			catch (Exception e) {
+//				Log.e("IWindowManagerWrapper", ""+e);
+//				iWindowManager = null;
+//				return;
+//			}		
+//		}
+//		
+//		public float getAnimationScale(int which) {
+//			if (iWindowManager == null)
+//				return Float.NaN;
+//			
+//			try {
+//				Float value = (Float)getAnimationScale.invoke(iWindowManager, which);
+//				return (float)value;
+//			} catch (InvocationTargetException e) {
+//				Log.e("IWindowManagerWrapper.getAnimationScale", ""+e.getCause());
+//				return Float.NaN;
+//			} catch (Exception e) {
+//				Log.e("IWindowManagerWrapper.getAnimationScale", ""+e);
+//				return Float.NaN;
+//			} 
+//		}
+//		
+//		public void setAnimationScale(int which, float value) {
+//			if (iWindowManager == null)
+//				return;
+//			
+//			try {
+//				setAnimationScale.invoke(iWindowManager, which, value);
+//			} catch (InvocationTargetException e) {
+//				Log.e("IWindowManagerWrapper.setAnimationScale", ""+e.getCause());
+//			} catch (Exception e) {
+//				Log.e("IWindowManagerWrapper.setAnimationScale", ""+e);
+//			} 
+//		}
+//		
+//		public void disableKeyguard(IBinder token, String tag) {
+//			if (iWindowManager == null)
+//				return;
+//			
+//			try {
+//				disableKeyguard.invoke(iWindowManager, token, tag);
+//				Log.v("IWindowManagerWrapper.disableKeyguard", "success");
+//			} catch (InvocationTargetException e) {
+//				Log.e("IWindowManagerWrapper.disableKeyguard", ""+e.getCause());
+//			} catch (Exception e) {
+//				Log.e("IWindowManagerWrapper.disableKeyguard", ""+e);
+//			} 
+//			
+//		}
+//	}
+
 }

@@ -30,6 +30,8 @@ public class Options extends PreferenceActivity {
 	public static final String PREF_MAXIMUM_BOOST = "maximumBoostPerc2";
 	public static final String PREF_MAXIMUM_BOOST_OLD = "maximumBoostPerc";
 	public static final String PREF_NOTIFY_LIGHT_ONLY_WHEN_OFF = "notifyLightOnlyWhenOff";
+	public static final String PREF_REMOVE_BOOST = "removeBoost";
+	public static final String PREF_LEGACY = "legacy";
 	
 	@Override
 	public void onCreate(Bundle icicle) {
