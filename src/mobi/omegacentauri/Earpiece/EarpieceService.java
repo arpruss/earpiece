@@ -332,6 +332,7 @@ public class EarpieceService extends Service implements SensorEventListener
 	}
 	
 	private void disableProximity() {
+		Earpiece.log("wakeLock "+(null != wakeLock));
 //		if (null == wakeLock) {
 //			wakeLock = pm.newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, 
 //					PROXIMITY_TAG);
@@ -349,10 +350,14 @@ public class EarpieceService extends Service implements SensorEventListener
 	
 	private void updateProximity() {
 		if (settings.isProximityActive() || 
-				(settings.isAutoSpeakerPhoneActive() && phoneOn))
+				(settings.isAutoSpeakerPhoneActive() && phoneOn)) {
+			Earpiece.log("Activate proximity");
 			activateProximity();
-		else
+		}
+		else {
+			Earpiece.log("Disable proximity");
 			disableProximity();		
+		}
 	}
 
 	@Override

@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 
 import mobi.omegacentauri.Earpiece.R;
 import mobi.omegacentauri.Earpiece.EarpieceService.IncomingHandler;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Notification;
@@ -70,7 +71,8 @@ public class Earpiece extends Activity implements ServiceConnection {
 	}
 	
     /** Called when the activity is first created. */
-    @Override
+    @SuppressLint("NewApi")
+	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
@@ -331,14 +333,12 @@ public class Earpiece extends Activity implements ServiceConnection {
 		ll.setLayoutParams(lp);
     }
     
-    
     @Override
-    public void onResume() {
-    	super.onResume();
-    	log("onResume");
+    public void onStart() {
+    	super.onStart();
     	
-    	resize();
-
+    	Earpiece.log("onStart()");
+    	
     	settings.load(options);
     	
     	if (options.getBoolean(Options.PREF_REMOVE_BOOST, false)) {
@@ -406,6 +406,16 @@ public class Earpiece extends Activity implements ServiceConnection {
 		
 //		ad.setVisibility(havePaidApp() ? View.GONE : View.VISIBLE);
 		
+
+    }
+    
+    @Override
+    public void onResume() {
+    	super.onResume();
+    	log("onResume");
+    	
+    	resize();
+
     }
     
 //    private boolean have(String p) {
